@@ -63,7 +63,7 @@ export default function Navigation() {
                 className="object-cover"
               />
             </div>
-            <div className="hidden md:block">
+            <div className="block">
               <h1 className="text-2xl font-bold text-accent dark:text-white">AlFarm</h1>
               <p className="text-sm text-gray-600 dark:text-white">Resort & Adventure Park</p>
             </div>

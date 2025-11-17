@@ -67,7 +67,7 @@ export default function GuestRegister() {
   return (
     <div className="min-h-screen hero-gradient py-12 px-4">
       <div className="max-w-md mx-auto">
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 dark:bg-accent-dark dark:text-white">
           {/* Logo and Header */}
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
@@ -80,8 +80,8 @@ export default function GuestRegister() {
                 />
               </div>
             </div>
-            <h2 className="text-3xl font-bold text-accent">Create Account</h2>
-            <p className="text-gray-600 mt-2">Join AlFarm Resort Community</p>
+            <h2 className="text-3xl font-bold text-accent dark:text-white">Create Account</h2>
+            <p className="text-gray-600 mt-2 dark:text-white">Join AlFarm Resort Community</p>
           </div>
 
           {error && (
@@ -93,7 +93,7 @@ export default function GuestRegister() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-white">
                   First Name *
                 </label>
                 <input
@@ -121,7 +121,7 @@ export default function GuestRegister() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-white">
                 Email Address *
               </label>
               <input
@@ -160,7 +160,7 @@ export default function GuestRegister() {
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               />
-              <p className="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
+              <p className="text-xs text-gray-500 mt-1 dark:text-white">Minimum 6 characters</p>
             </div>
 
             <div>
@@ -188,13 +188,13 @@ export default function GuestRegister() {
           </form>
 
           <div className="mt-6 pt-6 border-t border-gray-200 space-y-3 text-center">
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-white">
               Already have an account?{' '}
               <Link href="/guest/login" className="text-primary hover:underline font-semibold">
                 Login
               </Link>
             </p>
-            <Link href="/" className="block text-gray-600 hover:text-primary">
+            <Link href="/" className="block text-gray-600 hover:text-primary dark:text-white">
               ← Back to Home
             </Link>
           </div>

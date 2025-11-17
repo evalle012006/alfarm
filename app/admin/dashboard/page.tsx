@@ -42,17 +42,17 @@ export default function AdminDashboard() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-slate-950">
         <div className="text-center">
           <div className="text-5xl mb-4">⏳</div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600 dark:text-white">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 dark:bg-slate-950 dark:text-white">
       {/* Header */}
       <header className="bg-accent text-white shadow-lg">
         <div className="container mx-auto px-4 py-4">
@@ -96,13 +96,13 @@ export default function AdminDashboard() {
 
         {/* Stats Grid */}
         <div className="grid md:grid-cols-5 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow dark:bg-accent-dark dark:text-white">
             <div className="flex items-center justify-between mb-4">
               <div className="text-4xl">📊</div>
               <div className="text-sm text-gray-500">Total</div>
             </div>
-            <div className="text-3xl font-bold text-gray-800">{stats.totalBookings}</div>
-            <div className="text-gray-600 mt-1">Bookings</div>
+            <div className="text-3xl font-bold text-gray-800 dark:text-white">{stats.totalBookings}</div>
+            <div className="text-gray-600 mt-1 dark:text-white">Bookings</div>
           </div>
 
           <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
@@ -110,8 +110,8 @@ export default function AdminDashboard() {
               <div className="text-4xl">🏨</div>
               <div className="text-sm text-gray-500">Total</div>
             </div>
-            <div className="text-3xl font-bold text-gray-800">{stats.totalRooms}</div>
-            <div className="text-gray-600 mt-1">Rooms</div>
+            <div className="text-3xl font-bold text-gray-800 dark:text-white">{stats.totalRooms}</div>
+            <div className="text-gray-600 mt-1 dark:text-white">Rooms</div>
           </div>
 
           <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
@@ -120,7 +120,7 @@ export default function AdminDashboard() {
               <div className="text-sm text-gray-500">Status</div>
             </div>
             <div className="text-3xl font-bold text-green-600">{stats.availableRooms}</div>
-            <div className="text-gray-600 mt-1">Available</div>
+            <div className="text-gray-600 mt-1 dark:text-white">Available</div>
           </div>
 
           <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
@@ -129,7 +129,7 @@ export default function AdminDashboard() {
               <div className="text-sm text-gray-500">Pending</div>
             </div>
             <div className="text-3xl font-bold text-orange-600">{stats.pendingBookings}</div>
-            <div className="text-gray-600 mt-1">To Confirm</div>
+            <div className="text-gray-600 mt-1 dark:text-white">To Confirm</div>
           </div>
 
           <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
@@ -138,19 +138,19 @@ export default function AdminDashboard() {
               <div className="text-sm text-gray-500">Total</div>
             </div>
             <div className="text-3xl font-bold text-primary">{stats.totalGuests}</div>
-            <div className="text-gray-600 mt-1">Guests</div>
+            <div className="text-gray-600 mt-1 dark:text-white">Guests</div>
           </div>
         </div>
 
         {/* Management Cards */}
         <div className="grid md:grid-cols-3 gap-8 mb-8">
           <Link href="/admin/bookings">
-            <div className="bg-white rounded-xl shadow-lg p-8 hover:shadow-2xl transition-all duration-300 cursor-pointer group">
+            <div className="bg-white rounded-xl shadow-lg p-8 hover:shadow-2xl transition-all duration-300 cursor-pointer group dark:bg-accent-dark dark:text-white">
               <div className="text-6xl mb-4 text-center group-hover:scale-110 transition-transform">📅</div>
               <h3 className="text-2xl font-bold text-center text-accent mb-3">
                 Manage Bookings
               </h3>
-              <p className="text-gray-600 text-center">
+              <p className="text-gray-600 text-center dark:text-white">
                 View, confirm, and manage guest reservations
               </p>
               <div className="mt-4 text-center">
@@ -162,7 +162,7 @@ export default function AdminDashboard() {
           </Link>
 
           <Link href="/admin/rooms">
-            <div className="bg-white rounded-xl shadow-lg p-8 hover:shadow-2xl transition-all duration-300 cursor-pointer group">
+            <div className="bg-white rounded-xl shadow-lg p-8 hover:shadow-2xl transition-all duration-300 cursor-pointer group dark:bg-accent-dark dark:text-white">
               <div className="text-6xl mb-4 text-center group-hover:scale-110 transition-transform">🛏️</div>
               <h3 className="text-2xl font-bold text-center text-accent mb-3">
                 Manage Rooms
@@ -179,7 +179,7 @@ export default function AdminDashboard() {
           </Link>
 
           <Link href="/admin/amenities">
-            <div className="bg-white rounded-xl shadow-lg p-8 hover:shadow-2xl transition-all duration-300 cursor-pointer group">
+            <div className="bg-white rounded-xl shadow-lg p-8 hover:shadow-2xl transition-all duration-300 cursor-pointer group dark:bg-accent-dark dark:text-white">
               <div className="text-6xl mb-4 text-center group-hover:scale-110 transition-transform">⭐</div>
               <h3 className="text-2xl font-bold text-center text-accent mb-3">
                 Manage Amenities
@@ -197,8 +197,8 @@ export default function AdminDashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <h3 className="text-xl font-bold text-accent mb-4">Quick Actions</h3>
+        <div className="bg-white rounded-xl shadow-lg p-6 dark:bg-accent-dark dark:text-white">
+          <h3 className="text-xl font-bold text-accent mb-4 dark:text-white">Quick Actions</h3>
           <div className="grid md:grid-cols-4 gap-4">
             <Link href="/" className="p-4 bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors text-center">
               <div className="text-3xl mb-2">🌐</div>

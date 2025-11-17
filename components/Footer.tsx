@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import logo from '../images/alfarm_logo.jpg';
 
 export default function Footer() {
   return (
@@ -9,12 +10,12 @@ export default function Footer() {
           {/* About Section */}
           <div>
             <div className="flex items-center space-x-3 mb-4">
-              <div className="w-12 h-12 relative">
+              <div className="w-12 h-12 relative rounded-full overflow-hidden">
                 <Image
-                  src="/logo.png"
+                  src={logo}
                   alt="AlFarm Logo"
                   fill
-                  className="object-contain"
+                  className="object-cover"
                 />
               </div>
               <div>

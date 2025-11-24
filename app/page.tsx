@@ -57,6 +57,7 @@ export default function Home() {
                   </span>
                 </div>
 
+                 {/* Booking Widget */}
                 <TagToggle
                   options={['Day-use', 'Overnight']}
                   active="Day-use"

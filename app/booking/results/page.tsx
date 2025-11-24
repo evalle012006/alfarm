@@ -85,11 +85,11 @@ export default function BookingResultsPage() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-              <div className="flex-1">
+              <div className="flex-1 min-w-[180px]">
                 <label className="block text-xs font-semibold text-gray-600 mb-1 dark:text-white">
                   Sort by
                 </label>
-                <select className="input-field text-sm">
+                <select className="input-field text-sm bg-white text-gray-800 dark:bg-white dark:text-black">
                   <option>Price: Low to High</option>
                   <option>Price: High to Low</option>
                   <option>Capacity: Most Guests</option>

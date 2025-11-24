@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import PrimaryButton from '@/components/ui/PrimaryButton';
@@ -220,7 +221,7 @@ export default function BookingInfoPage() {
                 </label>
                 <textarea
                   rows={4}
-                  className="input-field"
+                  className="input-field bg-white text-black"
                   placeholder="Allergies, late check-in, celebration notes, etc."
                 ></textarea>
               </div>
@@ -230,9 +231,17 @@ export default function BookingInfoPage() {
                   By continuing, you agree to our house rules and cancellation policy. You&apos;ll see a
                   final summary of your stay before confirming the booking.
                 </p>
-                <PrimaryButton type="submit" className="w-full md:w-auto text-center">
-                  Continue to Review
-                </PrimaryButton>
+                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                  <Link
+                    href="/booking/results"
+                    className="btn-outline w-full sm:w-auto text-center"
+                  >
+                    Back
+                  </Link>
+                  <PrimaryButton type="submit" className="w-full sm:w-auto text-center">
+                    Continue to Review
+                  </PrimaryButton>
+                </div>
               </div>
             </form>
           </div>

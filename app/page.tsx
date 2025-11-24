@@ -93,9 +93,12 @@ export default function Home() {
                   </div>
                 </div>
 
-                <button className="btn-primary w-full py-3 text-base">
+                <PrimaryButton
+                  href="/booking/results"
+                  className="w-full py-3 text-base inline-block text-center"
+                >
                   Check Availability
-                </button>
+                </PrimaryButton>
 
                 <p className="mt-3 text-[11px] text-center text-gray-400 dark:text-white">
                   Choose your dates and guest count to continue to the full booking page.

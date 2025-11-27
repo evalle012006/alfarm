@@ -6,6 +6,7 @@ interface PrimaryButtonProps {
   children: ReactNode;
   className?: string;
   type?: 'button' | 'submit';
+  onClick?: () => void;
 }
 
 export default function PrimaryButton({
@@ -13,6 +14,7 @@ export default function PrimaryButton({
   children,
   className = '',
   type = 'button',
+  onClick,
 }: PrimaryButtonProps) {
   const baseClass = `btn-primary ${className}`;
 
@@ -25,7 +27,7 @@ export default function PrimaryButton({
   }
 
   return (
-    <button type={type} className={baseClass}>
+    <button type={type} className={baseClass} onClick={onClick}>
       {children}
     </button>
   );

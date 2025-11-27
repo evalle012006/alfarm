@@ -19,8 +19,10 @@ A full-stack resort management system with a beautiful public website built with
 ### Guest Features
 - ✅ User registration and authentication
 - ✅ Personal dashboard
-- ✅ Browse available rooms
-- 🚧 Make room reservations (UI ready, backend API to be implemented)
+- ✅ Browse available rooms and pricing
+- ✅ Check availability with real-time filtering (Day-use/Overnight)
+- ✅ Cart system with live price estimation
+- 🚧 Complete checkout process (UI ready, final submission to be wired)
 - 🚧 View booking history (UI ready, backend API to be implemented)
 - 🚧 Manage profile (to be implemented)
 
@@ -37,7 +39,7 @@ A full-stack resort management system with a beautiful public website built with
 - **Frontend**: Next.js 14 (App Router), React 18, TypeScript
 - **Styling**: Tailwind CSS with custom AlFarm theme
 - **Backend**: Next.js API Routes
-- **Database**: PostgreSQL
+- **Database**: PostgreSQL (Hosted on Aiven)
 - **Authentication**: JWT with bcryptjs
 - **Icons**: React Icons
 
@@ -223,13 +225,12 @@ The website uses AlFarm's brand colors:
 
 ## 🚧 Features to Implement
 
-- [ ] Complete booking system (create, view, manage)
-- [ ] Room availability calendar
+- [ ] Complete booking checkout (guest details & submission)
 - [ ] Payment integration
 - [ ] Email notifications
 - [ ] Image upload for rooms and gallery
 - [ ] Reviews and ratings
-- [ ] Search and filter functionality
+- [ ] Search and filter functionality (Expanded)
 - [ ] Admin reports and analytics
 - [ ] Guest booking management
 - [ ] Multi-language support

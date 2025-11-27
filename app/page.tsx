@@ -1,14 +1,82 @@
+'use client';
+
+import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import SectionHeader from '@/components/ui/SectionHeader';
 import PrimaryButton from '@/components/ui/PrimaryButton';
 import TagToggle from '@/components/ui/TagToggle';
+import CountSelector from '@/components/ui/CountSelector';
+import Notification, { NotificationType } from '@/components/ui/Notification';
 
 export default function Home() {
+  const router = useRouter();
+  const [bookingType, setBookingType] = useState('Day-use');
+  const [date, setDate] = useState('');
+  const [adults, setAdults] = useState(2);
+  const [children, setChildren] = useState(0);
+  const [showGuestMenu, setShowGuestMenu] = useState(false);
+  const guestMenuRef = useRef<HTMLDivElement>(null);
+  
+  const [notification, setNotification] = useState<{
+    show: boolean;
+    message: string;
+    type: NotificationType;
+  }>({ show: false, message: '', type: 'error' });
+
+  // Constants for Entrance Fees (Should match DB/Offers)
+  const FEES = {
+    DAY: { ADULT: 60, CHILD: 30 },
+    NIGHT: { ADULT: 70, CHILD: 35 }
+  };
+
+  // Calculate Entrance Fee Estimate
+  const currentFees = bookingType === 'Day-use' ? FEES.DAY : FEES.NIGHT;
+  const estimatedEntranceFee = (adults * currentFees.ADULT) + (children * currentFees.CHILD);
+
+  // Close guest menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (guestMenuRef.current && !guestMenuRef.current.contains(event.target as Node)) {
+        setShowGuestMenu(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSearch = () => {
+    if (!date) {
+      setNotification({
+        show: true,
+        message: 'Please select a date for your visit.',
+        type: 'error'
+      });
+      return;
+    }
+    
+    const params = new URLSearchParams({
+      type: bookingType === 'Day-use' ? 'day-use' : 'overnight',
+      date,
+      adults: adults.toString(),
+      children: children.toString(),
+    });
+
+    router.push(`/booking/results?${params.toString()}`);
+  };
+
   return (
     <>
       <Navigation />
+      
+      <Notification
+        isVisible={notification.show}
+        message={notification.message}
+        type={notification.type}
+        onClose={() => setNotification(prev => ({ ...prev, show: false }))}
+      />
       
       {/* Hero Section */}
       <section className="relative hero-gradient">
@@ -44,64 +112,105 @@ export default function Home() {
             </div>
 
             <div>
-              <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-100 p-6 md:p-8 dark:bg-slate-900/90 dark:border-slate-700">
+              <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-100 p-6 md:p-8 dark:bg-slate-900/90 dark:border-slate-700 relative z-20">
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <h2 className="text-lg md:text-xl font-semibold text-accent dark:text-white">Start your stay</h2>
                     <p className="text-xs md:text-sm text-gray-500 dark:text-white">
-                      Booking widget preview (non-functional)
+                      Best rates guaranteed
                     </p>
                   </div>
                   <span className="text-[10px] md:text-xs font-medium text-primary bg-primary/10 px-3 py-1 rounded-full dark:text-primary-100 dark:bg-primary/20">
-                    Live preview
+                    Book Online
                   </span>
                 </div>
 
                  {/* Booking Widget */}
                 <TagToggle
                   options={['Day-use', 'Overnight']}
-                  active="Day-use"
+                  active={bookingType}
+                  onChange={setBookingType}
                   className="mb-6"
                 />
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                   <div>
                     <label className="text-xs font-semibold text-gray-500 dark:text-white">Date</label>
-                    <div className="mt-1 flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                      <span>Select date</span>
-                      <svg
-                        className="w-4 h-4 text-gray-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
-                      </svg>
+                    <div className="mt-1">
+                      <input
+                        type="date"
+                        min={new Date().toISOString().split('T')[0]}
+                        value={date}
+                        onChange={(e) => setDate(e.target.value)}
+                        className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                      />
                     </div>
                   </div>
-                  <div>
+                  
+                  <div className="relative" ref={guestMenuRef}>
                     <label className="text-xs font-semibold text-gray-500 dark:text-white">Guests</label>
-                    <div className="mt-1 flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                      <span>2 guests</span>
-                      <span className="text-xs text-gray-400 dark:text-white">Edit</span>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowGuestMenu(!showGuestMenu)}
+                      className="w-full mt-1 flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800 transition-colors"
+                    >
+                      <span>{adults + children} guests</span>
+                      <span className="text-xs text-primary font-medium">Edit</span>
+                    </button>
+
+                    {/* Guest Menu Dropdown */}
+                    {showGuestMenu && (
+                      <div className="absolute top-full right-0 left-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 p-4 z-50 animate-fadeIn dark:bg-slate-900 dark:border-slate-700">
+                        <div className="space-y-4">
+                          <CountSelector
+                            label={`Adults (₱${currentFees.ADULT})`}
+                            value={adults}
+                            min={1}
+                            onChange={setAdults}
+                            helperText="Ages 13+"
+                          />
+                          <CountSelector
+                            label={`Children (₱${currentFees.CHILD})`}
+                            value={children}
+                            min={0}
+                            onChange={setChildren}
+                            helperText="Ages 0-12"
+                          />
+                          <div className="pt-3 border-t border-gray-100 dark:border-slate-800">
+                            <div className="flex justify-between items-center text-sm font-semibold text-gray-700 dark:text-white mb-3">
+                              <span>Entrance Fees:</span>
+                              <span className="text-primary">₱{estimatedEntranceFee}</span>
+                            </div>
+                            <button 
+                              onClick={() => setShowGuestMenu(false)}
+                              className="text-xs text-white bg-primary hover:bg-primary-600 w-full py-2 rounded-lg transition-colors"
+                            >
+                              Done
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <PrimaryButton
-                  href="/booking/results"
-                  className="w-full py-3 text-base inline-block text-center"
+                {/* Live Estimate Display */}
+                {date && (
+                  <div className="mb-4 p-3 bg-primary/5 rounded-lg border border-primary/10 flex justify-between items-center">
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-300">Estimated Entrance Fees:</span>
+                    <span className="text-sm font-bold text-primary">₱{estimatedEntranceFee}</span>
+                  </div>
+                )}
+
+                <button
+                  onClick={handleSearch}
+                  className="w-full bg-primary hover:bg-primary-600 text-white font-bold py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-primary/30 active:scale-[0.98]"
                 >
                   Check Availability
-                </PrimaryButton>
+                </button>
 
                 <p className="mt-3 text-[11px] text-center text-gray-400 dark:text-white">
-                  Choose your dates and guest count to continue to the full booking page.
+                  Choose your dates and guest count to see available offers.
                 </p>
               </div>
 
@@ -120,6 +229,7 @@ export default function Home() {
           </svg>
         </div>
       </section>
+
 
       {/* Features Section */}
       <section className="py-20 bg-white dark:bg-slate-950">

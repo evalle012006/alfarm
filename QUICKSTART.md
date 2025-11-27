@@ -13,7 +13,7 @@ Get up and running in 10 minutes!
 ### 1️⃣ Install Dependencies (2 minutes)
 
 ```bash
-cd alfarm-resort
+cd alfarm
 npm install
 ```
 
@@ -41,34 +41,50 @@ psql -U postgres -d alfarm_resort -f database/schema.sql
 
 ### 3️⃣ Create Admin User (2 minutes)
 
-Generate the password hash:
+The database schema includes a placeholder admin user with an **invalid password hash**. Generate a valid one:
 
 ```bash
 node scripts/generate-admin-hash.js
 ```
 
-Copy the INSERT statement from the output and run it in your PostgreSQL database.
+Copy the INSERT statement from the output and run it in your PostgreSQL database to replace the placeholder.
 
-### 4️⃣ Configure Environment (1 minute)
+### 4️⃣ Setup Public Assets (1 minute)
 
-Edit `.env.local`:
+Create a `public` folder and add your logo:
+
+```bash
+mkdir public
+# Add your logo.png file to the public folder (or use a placeholder)
+```
+
+### 5️⃣ Configure Environment (1 minute)
+
+Create a new file named `.env.local` in the project root:
 
 ```env
+# Database Configuration
 DB_HOST=localhost
 DB_PORT=5432
 DB_USER=postgres
 DB_PASSWORD=YOUR_POSTGRES_PASSWORD
 DB_NAME=alfarm_resort
-JWT_SECRET=your-random-secret-key-here
+
+# JWT Secret (Change this in production!)
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+
+# Application
+NEXT_PUBLIC_APP_NAME=AlFarm Resort and Adventure Park
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-### 5️⃣ Start the Application (1 minute)
+### 6️⃣ Start the Application (1 minute)
 
 ```bash
 npm run dev
 ```
 
-### 6️⃣ Access the Application (1 minute)
+### 7️⃣ Access the Application (1 minute)
 
 Open your browser:
 
@@ -116,12 +132,16 @@ The application is now running with:
 
 **Can't connect to database?**
 ```bash
-# Check if PostgreSQL is running
+# Linux/Mac - Check if PostgreSQL is running
 sudo service postgresql status
 
-# Or on Windows
-pg_ctl status
+# Windows - Check Services or run:
+pg_ctl status -D "C:\Program Files\PostgreSQL\[version]\data"
 ```
+
+**Missing .env.local file?**
+- Make sure you created it in the project root (not in a subdirectory)
+- File should be named exactly `.env.local` (note the leading dot)
 
 **Module errors?**
 ```bash
@@ -135,9 +155,11 @@ npm run dev -- -p 3001
 ```
 
 **Admin login fails?**
-- Verify admin user was created in database
-- Check password hash was generated correctly
+- The placeholder admin in schema.sql has an invalid hash - you MUST run `node scripts/generate-admin-hash.js`
+- Verify you inserted the generated admin user into the database
+- Check that `.env.local` is configured correctly
 - Ensure database connection works
+- Check browser console for error messages
 
 ## 📚 Need More Help?
 

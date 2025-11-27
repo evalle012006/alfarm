@@ -20,17 +20,17 @@ A full-stack resort management system with a beautiful public website built with
 - ✅ User registration and authentication
 - ✅ Personal dashboard
 - ✅ Browse available rooms
-- ✅ Make room reservations (UI ready, booking system to be implemented)
-- ✅ View booking history
-- ✅ Manage profile
+- 🚧 Make room reservations (UI ready, backend API to be implemented)
+- 🚧 View booking history (UI ready, backend API to be implemented)
+- 🚧 Manage profile (to be implemented)
 
 ### Admin Features
 - ✅ Secure admin login
 - ✅ Admin dashboard with statistics
-- ✅ Manage bookings (view, update status, cancel)
-- ✅ Manage rooms (add, edit, delete)
-- ✅ Manage amenities
-- ✅ View guest information
+- 🚧 Manage bookings (UI ready, backend API to be implemented)
+- 🚧 Manage rooms (UI ready, backend API to be implemented)
+- 🚧 Manage amenities (UI ready, backend API to be implemented)
+- 🚧 View guest information (UI ready, backend API to be implemented)
 
 ## 🛠️ Tech Stack
 
@@ -53,7 +53,7 @@ Before you begin, ensure you have the following installed:
 ### 1. Install Dependencies
 
 ```bash
-cd alfarm-resort
+cd alfarm
 npm install
 ```
 
@@ -88,23 +88,31 @@ psql -U postgres -d alfarm_resort -f database/schema.sql
 
 ### 3. Create Admin User with Correct Password
 
-The schema includes a placeholder for the admin user. You need to create it with a proper password hash:
+The database schema includes a placeholder admin user with an **invalid password hash**. You need to generate a proper hash and update the database:
 
 ```bash
-# Generate the password hash
+# Generate a valid password hash
 node scripts/generate-admin-hash.js
 ```
 
-This will output a hash for the password `admin123`. Copy the entire INSERT statement and run it in your PostgreSQL database:
+This will output a hash for the password `admin123`. Copy the entire INSERT statement from the output and run it in your PostgreSQL database to replace the placeholder admin user.
 
-```sql
-INSERT INTO users (email, password, first_name, last_name, role)
-VALUES ('admin@alfarm.com', 'YOUR_GENERATED_HASH_HERE', 'Admin', 'User', 'root');
+**Note**: The admin user in `schema.sql` has a dummy hash that won't work for login. This step is required.
+
+### 4. Setup Public Assets
+
+Create a `public` folder in the project root and add your logo:
+
+```bash
+mkdir public
+# Add your logo.png file to the public folder (recommended size: 512x512px)
 ```
 
-### 4. Configure Environment Variables
+If you don't have a logo, you can download a placeholder or the app will show a broken image icon.
 
-Edit the `.env.local` file with your PostgreSQL credentials:
+### 5. Configure Environment Variables
+
+Create a new file named `.env.local` in the project root with your PostgreSQL credentials:
 
 ```env
 # Database Configuration
@@ -122,7 +130,7 @@ NEXT_PUBLIC_APP_NAME=AlFarm Resort and Adventure Park
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-### 5. Run the Development Server
+### 6. Run the Development Server
 
 ```bash
 npm run dev
@@ -144,7 +152,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ## 📁 Project Structure
 
 ```
-alfarm-resort/
+alfarm/
 ├── app/                          # Next.js app directory
 │   ├── (public pages)/
 │   │   ├── page.tsx             # Home page
@@ -192,10 +200,10 @@ The website uses AlFarm's brand colors:
 
 ### Tables
 - **users** - User accounts (admin, root, and guests)
-- **rooms** - Room inventory
-- **amenities** - Resort amenities
-- **room_amenities** - Many-to-many relationship
-- **bookings** - Guest reservations
+- **categories** - Product categories (Accommodation, Entrance, Rental, etc.)
+- **products** - Unified inventory (Rooms, Cottages, Fees, Equipment)
+- **bookings** - Guest reservations header
+- **booking_items** - Line items for each booking (linking products to bookings)
 
 ## 📝 API Endpoints
 
@@ -203,22 +211,15 @@ The website uses AlFarm's brand colors:
 - `POST /api/auth/login` - User login
 - `POST /api/auth/register` - User registration
 
-### Rooms (To be implemented)
-- `GET /api/rooms` - Get all rooms
-- `POST /api/rooms` - Create room (admin only)
-- `PUT /api/rooms/[id]` - Update room (admin only)
-- `DELETE /api/rooms/[id]` - Delete room (admin only)
+### Products & Inventory
+- `GET /api/products` - Get all products (filter by category/date)
+- `GET /api/availability` - Check availability for specific dates
 
-### Bookings (To be implemented)
-- `GET /api/bookings` - Get bookings
-- `POST /api/bookings` - Create booking
-- `PUT /api/bookings/[id]` - Update booking
-- `DELETE /api/bookings/[id]` - Cancel booking
+### Bookings
+- `GET /api/bookings` - Get booking history
+- `POST /api/bookings` - Create new reservation
+- `GET /api/bookings/[id]` - Get booking details
 
-### Amenities (To be implemented)
-- `GET /api/amenities` - Get all amenities
-- `POST /api/amenities` - Create amenity (admin only)
-- `DELETE /api/amenities/[id]` - Delete amenity (admin only)
 
 ## 🚧 Features to Implement
 
@@ -236,9 +237,12 @@ The website uses AlFarm's brand colors:
 ## 🐛 Troubleshooting
 
 ### Cannot connect to database
-- Verify PostgreSQL is running: `sudo service postgresql status`
+- Verify PostgreSQL is running:
+  - Linux/Mac: `sudo service postgresql status`
+  - Windows: Check Services or run `pg_ctl status -D "C:\Program Files\PostgreSQL\[version]\data"`
 - Check credentials in `.env.local`
 - Ensure database `alfarm_resort` exists
+- Verify `.env.local` file is in the project root (not in a subdirectory)
 
 ### Module not found errors
 ```bash
@@ -253,9 +257,11 @@ npm run dev -- -p 3001
 ```
 
 ### Admin login not working
-- Ensure you've created the admin user with proper password hash
+- Ensure you've run `node scripts/generate-admin-hash.js` and inserted the admin user
+- The placeholder admin in schema.sql has an invalid hash - you MUST regenerate it
 - Verify the email is `admin@alfarm.com` and password is `admin123`
-- Check database connection
+- Check database connection and that `.env.local` is configured correctly
+- Check browser console for error messages
 
 ## 📦 Build for Production
 

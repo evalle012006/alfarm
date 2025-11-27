@@ -71,7 +71,7 @@ export default function Rooms() {
       </section>
 
       {/* Rooms Grid */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-white dark:bg-slate-950">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
             {rooms.map((room, index) => (
@@ -80,23 +80,23 @@ export default function Rooms() {
                   <div className="flex items-center space-x-4">
                     <div className="text-5xl">{room.icon}</div>
                     <div>
-                      <h3 className="text-2xl font-bold text-accent">{room.name}</h3>
-                      <p className="text-gray-600">Up to {room.capacity} guests</p>
+                      <h3 className="text-2xl font-bold text-accent dark:text-white">{room.name}</h3>
+                      <p className="text-gray-600 dark:text-white">Up to {room.capacity} guests</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="text-3xl font-bold text-primary">₱{room.price}</p>
-                    <p className="text-sm text-gray-500">per night</p>
+                    <p className="text-sm text-gray-500 dark:text-white">per night</p>
                   </div>
                 </div>
                 
-                <p className="text-gray-700 mb-4">{room.description}</p>
+                <p className="text-gray-700 mb-4 dark:text-white">{room.description}</p>
                 
                 <div className="mb-4">
                   <h4 className="font-semibold text-accent mb-2">Features:</h4>
                   <div className="grid grid-cols-2 gap-2">
                     {room.features.map((feature, idx) => (
-                      <div key={idx} className="flex items-center space-x-2 text-sm text-gray-600">
+                      <div key={idx} className="flex items-center space-x-2 text-sm text-gray-600 dark:text-white">
                         <span className="text-secondary">✓</span>
                         <span>{feature}</span>
                       </div>
@@ -114,15 +114,15 @@ export default function Rooms() {
       </section>
 
       {/* Amenities Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-gray-50 dark:bg-slate-950">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-accent mb-4">All Rooms Include</h2>
-            <p className="text-gray-600">Standard amenities across all accommodations</p>
+            <h2 className="text-3xl font-bold text-accent mb-4 dark:text-white">All Rooms Include</h2>
+            <p className="text-gray-600 dark:text-white">Standard amenities across all accommodations</p>
           </div>
 
           <div className="grid md:grid-cols-4 gap-6 max-w-5xl mx-auto">
-            <div className="text-center p-6 bg-white rounded-lg shadow">
+            <div className="text-center p-6 bg-white rounded-lg shadow dark:bg-accent-dark dark:text-white">
               <div className="text-4xl mb-3">📶</div>
               <h4 className="font-semibold text-accent">High-Speed WiFi</h4>
             </div>
@@ -159,27 +159,27 @@ export default function Rooms() {
       </section>
 
       {/* Policies Section */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-white dark:bg-slate-950">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl font-bold text-accent mb-8 text-center">Booking Information</h2>
+            <h2 className="text-3xl font-bold text-accent mb-8 text-center dark:text-white">Booking Information</h2>
             
             <div className="grid md:grid-cols-3 gap-8">
               <div className="text-center">
                 <div className="text-4xl mb-3">⏰</div>
-                <h3 className="font-bold text-accent mb-2">Check-In/Out</h3>
-                <p className="text-gray-600">Check-in: 2:00 PM</p>
-                <p className="text-gray-600">Check-out: 12:00 PM</p>
+                <h3 className="font-bold text-accent mb-2 dark:text-white">Check-In/Out</h3>
+                <p className="text-gray-600 dark:text-white">Check-in: 2:00 PM</p>
+                <p className="text-gray-600 dark:text-white">Check-out: 12:00 PM</p>
               </div>
               <div className="text-center">
                 <div className="text-4xl mb-3">❌</div>
-                <h3 className="font-bold text-accent mb-2">Cancellation</h3>
-                <p className="text-gray-600">Free cancellation up to 48 hours before arrival</p>
+                <h3 className="font-bold text-accent mb-2 dark:text-white">Cancellation</h3>
+                <p className="text-gray-600 dark:text-white">Free cancellation up to 48 hours before arrival</p>
               </div>
               <div className="text-center">
                 <div className="text-4xl mb-3">🐕</div>
-                <h3 className="font-bold text-accent mb-2">Pets</h3>
-                <p className="text-gray-600">Pet-friendly rooms available upon request</p>
+                <h3 className="font-bold text-accent mb-2 dark:text-white">Pets</h3>
+                <p className="text-gray-600 dark:text-white">Pet-friendly rooms available upon request</p>
               </div>
             </div>
           </div>

@@ -128,38 +128,38 @@ export default function Activities() {
       </section>
 
       {/* Activities Grid */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-white dark:bg-slate-950">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {activities.map((activity, index) => (
-              <div 
-                key={activity.id} 
+              <div
+                key={activity.id}
                 className="card"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 <div className="text-center mb-4">
                   <div className="text-6xl mb-3">{activity.icon}</div>
-                  <h3 className="text-2xl font-bold text-accent mb-2">{activity.name}</h3>
+                  <h3 className="text-2xl font-bold text-accent mb-2 dark:text-white">{activity.name}</h3>
                 </div>
                 
-                <p className="text-gray-700 mb-4">{activity.description}</p>
+                <p className="text-gray-700 mb-4 dark:text-white">{activity.description}</p>
                 
                 <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
-                  <div className="bg-primary/10 p-3 rounded-lg text-center">
-                    <p className="text-gray-600">Duration</p>
-                    <p className="font-semibold text-accent">{activity.duration}</p>
+                  <div className="bg-primary/10 p-3 rounded-lg text-center dark:bg-accent-dark/60">
+                    <p className="text-gray-600 dark:text-white">Duration</p>
+                    <p className="font-semibold text-accent dark:text-white">{activity.duration}</p>
                   </div>
-                  <div className="bg-secondary/10 p-3 rounded-lg text-center">
-                    <p className="text-gray-600">Difficulty</p>
-                    <p className="font-semibold text-accent">{activity.difficulty}</p>
+                  <div className="bg-secondary/10 p-3 rounded-lg text-center dark:bg-accent-dark/60">
+                    <p className="text-gray-600 dark:text-white">Difficulty</p>
+                    <p className="font-semibold text-accent dark:text-white">{activity.difficulty}</p>
                   </div>
                 </div>
                 
                 <div>
-                  <h4 className="font-semibold text-accent mb-2">Highlights:</h4>
+                  <h4 className="font-semibold text-accent mb-2 dark:text-white">Highlights:</h4>
                   <ul className="space-y-1">
                     {activity.highlights.map((highlight, idx) => (
-                      <li key={idx} className="flex items-start space-x-2 text-sm text-gray-600">
+                      <li key={idx} className="flex items-start space-x-2 text-sm text-gray-600 dark:text-white">
                         <span className="text-secondary">✓</span>
                         <span>{highlight}</span>
                       </li>
@@ -173,43 +173,43 @@ export default function Activities() {
       </section>
 
       {/* Safety Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-gray-50 dark:bg-slate-950">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-accent mb-4">Safety First</h2>
-              <p className="text-gray-600">Your safety is our top priority</p>
+              <h2 className="text-3xl font-bold text-accent mb-4 dark:text-white">Safety First</h2>
+              <p className="text-gray-600 dark:text-white">Your safety is our top priority</p>
             </div>
 
             <div className="grid md:grid-cols-2 gap-8">
-              <div className="bg-white p-6 rounded-lg shadow">
+              <div className="bg-white p-6 rounded-lg shadow dark:bg-accent-dark dark:text-white">
                 <div className="text-4xl mb-3">🛡️</div>
-                <h3 className="text-xl font-bold text-accent mb-3">Professional Equipment</h3>
-                <p className="text-gray-700">
+                <h3 className="text-xl font-bold text-accent mb-3 dark:text-white">Professional Equipment</h3>
+                <p className="text-gray-700 dark:text-white">
                   All our adventure equipment meets international safety standards and is regularly inspected and maintained.
                 </p>
               </div>
 
-              <div className="bg-white p-6 rounded-lg shadow">
+              <div className="bg-white p-6 rounded-lg shadow dark:bg-accent-dark dark:text-white">
                 <div className="text-4xl mb-3">👨‍🏫</div>
-                <h3 className="text-xl font-bold text-accent mb-3">Certified Guides</h3>
-                <p className="text-gray-700">
+                <h3 className="text-xl font-bold text-accent mb-3 dark:text-white">Certified Guides</h3>
+                <p className="text-gray-700 dark:text-white">
                   Our experienced guides are professionally trained and certified in their respective activities and first aid.
                 </p>
               </div>
 
-              <div className="bg-white p-6 rounded-lg shadow">
+              <div className="bg-white p-6 rounded-lg shadow dark:bg-accent-dark dark:text-white">
                 <div className="text-4xl mb-3">📋</div>
-                <h3 className="text-xl font-bold text-accent mb-3">Safety Briefings</h3>
-                <p className="text-gray-700">
+                <h3 className="text-xl font-bold text-accent mb-3 dark:text-white">Safety Briefings</h3>
+                <p className="text-gray-700 dark:text-white">
                   Comprehensive safety instructions and demonstrations are provided before every activity.
                 </p>
               </div>
 
-              <div className="bg-white p-6 rounded-lg shadow">
+              <div className="bg-white p-6 rounded-lg shadow dark:bg-accent-dark dark:text-white">
                 <div className="text-4xl mb-3">🚑</div>
-                <h3 className="text-xl font-bold text-accent mb-3">Emergency Prepared</h3>
-                <p className="text-gray-700">
+                <h3 className="text-xl font-bold text-accent mb-3 dark:text-white">Emergency Prepared</h3>
+                <p className="text-gray-700 dark:text-white">
                   On-site medical facilities and emergency response teams are always ready to assist.
                 </p>
               </div>

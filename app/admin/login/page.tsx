@@ -43,9 +43,9 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-accent to-accent-light flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-accent to-accent-light flex items-center justify-center px-4 dark:from-accent-dark dark:to-primary-900">
       <div className="max-w-md w-full">
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 dark:bg-accent-dark dark:text-white">
           {/* Logo and Header */}
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
@@ -58,8 +58,8 @@ export default function AdminLogin() {
                 />
               </div>
             </div>
-            <h2 className="text-3xl font-bold text-accent">Admin Portal</h2>
-            <p className="text-gray-600 mt-2">AlFarm Resort Management</p>
+            <h2 className="text-3xl font-bold text-accent dark:text-white">Admin Portal</h2>
+            <p className="text-gray-600 mt-2 dark:text-white">AlFarm Resort Management</p>
           </div>
 
           {error && (
@@ -70,7 +70,7 @@ export default function AdminLogin() {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-white">
                 Email Address
               </label>
               <input
@@ -107,7 +107,7 @@ export default function AdminLogin() {
           </form>
 
           <div className="mt-6 pt-6 border-t border-gray-200">
-            <div className="text-center text-sm text-gray-600">
+            <div className="text-center text-sm text-gray-600 dark:text-white">
               <p className="mb-2">Default credentials for testing:</p>
               <p className="font-mono bg-gray-100 p-2 rounded">admin@alfarm.com</p>
               <p className="font-mono bg-gray-100 p-2 rounded mt-1">admin123</p>

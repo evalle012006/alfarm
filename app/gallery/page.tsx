@@ -61,11 +61,18 @@ export default function Gallery() {
 
       {/* Gallery Sections */}
       {categories.map((category, catIndex) => (
-        <section key={catIndex} className={`py-16 ${catIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+        <section
+          key={catIndex}
+          className={`py-16 ${
+            catIndex % 2 === 0
+              ? 'bg-white dark:bg-slate-950'
+              : 'bg-gray-50 dark:bg-slate-950'
+          }`}
+        >
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
               <div className="text-5xl mb-3">{category.icon}</div>
-              <h2 className="text-3xl font-bold text-accent mb-2">{category.name}</h2>
+              <h2 className="text-3xl font-bold text-accent mb-2 dark:text-white">{category.name}</h2>
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
@@ -77,8 +84,8 @@ export default function Gallery() {
                   <div className="aspect-square bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
                     <div className="text-center p-6">
                       <div className="text-6xl mb-4">{category.icon}</div>
-                      <h3 className="font-bold text-accent mb-2">{image.title}</h3>
-                      <p className="text-sm text-gray-600">{image.desc}</p>
+                      <h3 className="font-bold text-accent mb-2 dark:text-white">{image.title}</h3>
+                      <p className="text-sm text-gray-600 dark:text-white">{image.desc}</p>
                     </div>
                   </div>
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end">
@@ -95,7 +102,7 @@ export default function Gallery() {
       ))}
 
       {/* Video Section */}
-      <section className="py-16 bg-gray-900 text-white">
+      <section className="py-16 bg-gray-900 text-white dark:bg-slate-950">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-2">Experience AlFarm</h2>
@@ -106,8 +113,8 @@ export default function Gallery() {
             <div className="aspect-video bg-gray-800 rounded-xl flex items-center justify-center">
               <div className="text-center">
                 <div className="text-6xl mb-4">🎥</div>
-                <p className="text-gray-400">Virtual Tour Video</p>
-                <p className="text-sm text-gray-500 mt-2">Coming Soon</p>
+                <p className="text-gray-400 dark:text-white">Virtual Tour Video</p>
+                <p className="text-sm text-gray-500 mt-2 dark:text-white">Coming Soon</p>
               </div>
             </div>
           </div>
@@ -115,11 +122,11 @@ export default function Gallery() {
       </section>
 
       {/* Instagram Feed Section */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-white dark:bg-slate-950">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-accent mb-2">Follow Our Adventures</h2>
-            <p className="text-gray-600 mb-4">@AlFarmResort on Instagram</p>
+            <h2 className="text-3xl font-bold text-accent mb-2 dark:text-white">Follow Our Adventures</h2>
+            <p className="text-gray-600 mb-4 dark:text-white">@AlFarmResort on Instagram</p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 max-w-7xl mx-auto">

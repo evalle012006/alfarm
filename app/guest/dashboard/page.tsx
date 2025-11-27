@@ -33,7 +33,7 @@ export default function GuestDashboard() {
       <div className="min-h-screen flex items-center justify-center hero-gradient">
         <div className="text-center">
           <div className="text-5xl mb-4">⏳</div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600 dark:text-white">Loading...</p>
         </div>
       </div>
     );
@@ -42,7 +42,7 @@ export default function GuestDashboard() {
   return (
     <div className="min-h-screen hero-gradient">
       {/* Header */}
-      <header className="bg-white shadow-lg">
+      <header className="bg-white shadow-lg dark:bg-accent-dark dark:text-white">
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-4">
@@ -55,14 +55,14 @@ export default function GuestDashboard() {
                 />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-accent">My Dashboard</h1>
-                <p className="text-sm text-gray-600">AlFarm Resort</p>
+                <h1 className="text-2xl font-bold text-accent dark:text-white">My Dashboard</h1>
+                <p className="text-sm text-gray-600 dark:text-white">AlFarm Resort</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right hidden md:block">
-                <p className="font-semibold text-accent">{user.firstName} {user.lastName}</p>
-                <p className="text-sm text-gray-600">{user.email}</p>
+                <p className="font-semibold text-accent dark:text-white">{user.firstName} {user.lastName}</p>
+                <p className="text-sm text-gray-600 dark:text-white">{user.email}</p>
               </div>
               <button
                 onClick={handleLogout}
@@ -85,12 +85,12 @@ export default function GuestDashboard() {
         {/* Quick Actions */}
         <div className="grid md:grid-cols-2 gap-8 mb-8">
           <Link href="/rooms">
-            <div className="bg-white rounded-xl shadow-lg p-8 hover:shadow-2xl transition-all duration-300 cursor-pointer group">
+            <div className="bg-white rounded-xl shadow-lg p-8 hover:shadow-2xl transition-all duration-300 cursor-pointer group dark:bg-accent-dark dark:text-white">
               <div className="text-6xl mb-4 text-center group-hover:scale-110 transition-transform">🏨</div>
               <h3 className="text-2xl font-bold text-center text-accent mb-3">
                 Browse Rooms
               </h3>
-              <p className="text-gray-600 text-center">
+              <p className="text-gray-600 text-center dark:text-white">
                 Explore our accommodations and make a new reservation
               </p>
               <div className="mt-4 text-center">
@@ -102,7 +102,7 @@ export default function GuestDashboard() {
           </Link>
 
           <Link href="/activities">
-            <div className="bg-white rounded-xl shadow-lg p-8 hover:shadow-2xl transition-all duration-300 cursor-pointer group">
+            <div className="bg-white rounded-xl shadow-lg p-8 hover:shadow-2xl transition-all duration-300 cursor-pointer group dark:bg-accent-dark dark:text-white">
               <div className="text-6xl mb-4 text-center group-hover:scale-110 transition-transform">🪂</div>
               <h3 className="text-2xl font-bold text-center text-accent mb-3">
                 Explore Activities
@@ -120,33 +120,33 @@ export default function GuestDashboard() {
         </div>
 
         {/* Profile Card */}
-        <div className="bg-white rounded-xl shadow-lg p-8">
-          <h3 className="text-2xl font-bold text-accent mb-6">My Profile</h3>
+        <div className="bg-white rounded-xl shadow-lg p-8 dark:bg-accent-dark dark:text-white">
+          <h3 className="text-2xl font-bold text-accent mb-6 dark:text-white">My Profile</h3>
           <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">Name</label>
+              <label className="block text-sm font-medium text-gray-600 mb-1 dark:text-white">Name</label>
               <p className="text-lg font-semibold text-accent">{user.firstName} {user.lastName}</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">Email</label>
+              <label className="block text-sm font-medium text-gray-600 mb-1 dark:text-white">Email</label>
               <p className="text-lg font-semibold text-accent">{user.email}</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">Phone</label>
+              <label className="block text-sm font-medium text-gray-600 mb-1 dark:text-white">Phone</label>
               <p className="text-lg font-semibold text-accent">{user.phone || 'Not provided'}</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">Member Since</label>
+              <label className="block text-sm font-medium text-gray-600 mb-1 dark:text-white">Member Since</label>
               <p className="text-lg font-semibold text-accent">Just joined!</p>
             </div>
           </div>
         </div>
 
         {/* My Bookings Section */}
-        <div className="mt-8 bg-white rounded-xl shadow-lg p-8">
-          <h3 className="text-2xl font-bold text-accent mb-6">My Bookings</h3>
+        <div className="mt-8 bg-white rounded-xl shadow-lg p-8 dark:bg-accent-dark dark:text-white">
+          <h3 className="text-2xl font-bold text-accent mb-6 dark:text-white">My Bookings</h3>
           
-          <div className="text-center py-12 text-gray-600">
+          <div className="text-center py-12 text-gray-600 dark:text-white">
             <div className="text-6xl mb-4">📭</div>
             <p className="text-lg mb-2">No bookings yet</p>
             <p className="text-sm text-gray-500 mb-6">
@@ -160,19 +160,19 @@ export default function GuestDashboard() {
 
         {/* Quick Links */}
         <div className="mt-8 grid md:grid-cols-4 gap-4">
-          <Link href="/" className="p-4 bg-white rounded-lg shadow hover:shadow-lg transition-shadow text-center">
+          <Link href="/" className="p-4 bg-white rounded-lg shadow hover:shadow-lg transition-shadow text-center dark:bg-accent-dark dark:text-white">
             <div className="text-3xl mb-2">🏠</div>
             <p className="font-semibold text-accent">Home</p>
           </Link>
-          <Link href="/about" className="p-4 bg-white rounded-lg shadow hover:shadow-lg transition-shadow text-center">
+          <Link href="/about" className="p-4 bg-white rounded-lg shadow hover:shadow-lg transition-shadow text-center dark:bg-accent-dark dark:text-white">
             <div className="text-3xl mb-2">ℹ️</div>
             <p className="font-semibold text-accent">About Us</p>
           </Link>
-          <Link href="/gallery" className="p-4 bg-white rounded-lg shadow hover:shadow-lg transition-shadow text-center">
+          <Link href="/gallery" className="p-4 bg-white rounded-lg shadow hover:shadow-lg transition-shadow text-center dark:bg-accent-dark dark:text-white">
             <div className="text-3xl mb-2">📷</div>
             <p className="font-semibold text-accent">Gallery</p>
           </Link>
-          <Link href="/contact" className="p-4 bg-white rounded-lg shadow hover:shadow-lg transition-shadow text-center">
+          <Link href="/contact" className="p-4 bg-white rounded-lg shadow hover:shadow-lg transition-shadow text-center dark:bg-accent-dark dark:text-white">
             <div className="text-3xl mb-2">📞</div>
             <p className="font-semibold text-accent">Contact</p>
           </Link>

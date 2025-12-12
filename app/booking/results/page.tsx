@@ -209,7 +209,7 @@ export default function BookingResultsPage() {
       />
 
       {/* Hero / Summary */}
-      <section className="py-20 bg-gradient-to-br from-primary/5 via-white to-secondary/5 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900">
+      <section className="py-12 md:py-20 bg-gradient-to-br from-primary/5 via-white to-secondary/5 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center animate-fadeIn">
             <div className="inline-flex items-center gap-2 bg-primary/10 dark:bg-primary/20 px-4 py-2 rounded-full mb-4">
@@ -231,24 +231,24 @@ export default function BookingResultsPage() {
                   : `Showing options for ${new Date(checkInDate).toLocaleDateString()}`
               ) : 'Select your preferred accommodations and see what is available in real time.'}
             </p>
-            <div className="inline-flex flex-wrap items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white/90 px-6 py-3 shadow-lg backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/80">
-              <span className="inline-flex items-center gap-2 text-sm font-medium text-accent dark:text-white">
-                <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-2 sm:gap-3 rounded-2xl border border-gray-200 bg-white/90 px-4 sm:px-6 py-3 shadow-lg backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/80 w-full sm:w-auto">
+              <span className="inline-flex items-center gap-2 text-xs sm:text-sm font-medium text-accent dark:text-white">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 {checkInDate || 'No date selected'}
                 {searchType === 'overnight' && checkOutDate ? ` → ${checkOutDate}` : ''}
               </span>
-              <span className="h-4 w-px bg-gray-300 dark:bg-slate-700"></span>
-              <span className="inline-flex items-center gap-2 text-sm font-medium text-accent dark:text-white">
-                <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <span className="hidden sm:block h-4 w-px bg-gray-300 dark:bg-slate-700"></span>
+              <span className="inline-flex items-center gap-2 text-xs sm:text-sm font-medium text-accent dark:text-white">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
                 {searchAdults} Adults, {searchChildren} Kids
               </span>
-              <span className="h-4 w-px bg-gray-300 dark:bg-slate-700"></span>
-              <span className="inline-flex items-center gap-2 text-sm font-medium text-accent dark:text-white capitalize">
-                <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <span className="hidden sm:block h-4 w-px bg-gray-300 dark:bg-slate-700"></span>
+              <span className="inline-flex items-center gap-2 text-xs sm:text-sm font-medium text-accent dark:text-white capitalize">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                 </svg>
                 {searchType === 'day' ? 'Day-use' : 'Overnight'}
@@ -259,10 +259,10 @@ export default function BookingResultsPage() {
       </section>
 
       {/* Filters + Results */}
-      <section className="py-16 bg-gradient-to-b from-gray-50 to-white dark:from-slate-950 dark:to-slate-900 pb-32">
+      <section className="py-8 md:py-16 bg-gradient-to-b from-gray-50 to-white dark:from-slate-950 dark:to-slate-900 pb-32">
         <div className="container mx-auto max-w-6xl px-4">
           {/* Filter Bar */}
-          <div className="mb-10 rounded-3xl border border-gray-200 bg-white shadow-lg dark:border-slate-800 dark:bg-slate-900 p-6 md:p-8">
+          <div className="mb-6 md:mb-10 rounded-2xl md:rounded-3xl border border-gray-200 bg-white shadow-lg dark:border-slate-800 dark:bg-slate-900 p-4 md:p-6 lg:p-8">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
                 <div className="flex items-center gap-3 mb-2">
@@ -343,7 +343,7 @@ export default function BookingResultsPage() {
 
           {/* Product Cards */}
           {!loading && !error && (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {filteredProducts.map((product) => {
                 const quantity = cart[product.id] || 0;
                 const remaining = availabilityMap[product.id]?.remaining;
@@ -453,9 +453,9 @@ export default function BookingResultsPage() {
 
       {/* Sticky Summary Footer */}
       {(totalItems > 0 || totalEntranceFees > 0) && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-primary/20 bg-gradient-to-r from-white via-gray-50 to-white dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-4 shadow-2xl backdrop-blur-md animate-slideUp">
-          <div className="container mx-auto flex max-w-6xl flex-col items-stretch gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-4">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-primary/20 bg-gradient-to-r from-white via-gray-50 to-white dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-3 md:p-4 shadow-2xl backdrop-blur-md animate-slideUp">
+          <div className="container mx-auto flex max-w-6xl flex-col items-stretch gap-3 md:gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-3 md:gap-4">
               <div className="hidden md:flex w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary-600 items-center justify-center shadow-lg">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -466,7 +466,7 @@ export default function BookingResultsPage() {
                   Total Estimate
                 </p>
                 <div className="flex flex-wrap items-baseline gap-2">
-                  <span className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                  <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                     ₱{totalCost.toLocaleString()}
                   </span>
                   <span className="text-sm text-gray-600 dark:text-gray-300">
@@ -480,7 +480,7 @@ export default function BookingResultsPage() {
             </div>
             <PrimaryButton
               onClick={handleProceed}
-              className="w-full md:w-auto justify-center px-8 py-4 text-base font-semibold shadow-xl shadow-primary/40 hover:shadow-2xl hover:shadow-primary/50 hover:scale-105 transition-all duration-200"
+              className="w-full md:w-auto justify-center px-6 md:px-8 py-3 md:py-4 text-sm md:text-base font-semibold shadow-xl shadow-primary/40 hover:shadow-2xl hover:shadow-primary/50 hover:scale-105 transition-all duration-200"
             >
               Proceed to Booking →
             </PrimaryButton>

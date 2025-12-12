@@ -22,7 +22,7 @@ export default function CountSelector({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center gap-2 mb-2">
         <span className="text-sm font-medium text-gray-700 dark:text-white">{label}</span>
         {helperText && (
           <span className="text-xs text-gray-500 dark:text-white">{helperText}</span>

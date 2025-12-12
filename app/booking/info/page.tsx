@@ -309,7 +309,7 @@ export default function BookingInfoPage() {
                     </p>
                     <div className="grid grid-cols-2 gap-3">
                       <CountSelector
-                        label="Adults *"
+                        label="Adults*"
                         value={form.adults}
                         min={1}
                         onChange={(value) => updateField('adults', value)}
@@ -350,8 +350,8 @@ export default function BookingInfoPage() {
                   >
                     Back
                   </Link>
-                  <PrimaryButton 
-                    type="submit" 
+                  <PrimaryButton
+                    type="submit"
                     className="w-full sm:w-auto text-center"
                     disabled={isSubmitting}
                   >

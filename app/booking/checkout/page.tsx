@@ -29,6 +29,8 @@ export default function BookingCheckoutPage() {
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [bookingSuccess, setBookingSuccess] = useState(false);
   const [notification, setNotification] = useState<{ show: boolean; message: string; type: NotificationType }>(
     { show: false, message: '', type: 'error' }
   );
@@ -161,15 +163,6 @@ export default function BookingCheckoutPage() {
       return;
     }
 
-    if (!termsAccepted) {
-      setNotification({
-        show: true,
-        message: 'Please accept the terms and cancellation policy before continuing.',
-        type: 'warning',
-      });
-      return;
-    }
-
     if (!fees.adult || (state.children > 0 && !fees.child)) {
       setNotification({
         show: true,
@@ -210,10 +203,16 @@ export default function BookingCheckoutPage() {
 
       setConfirmation({ bookingId: data.booking_id, totalAmount: data.total_amount });
 
-      // Clear booking flow state but keep dates/guests for quick re-book
-      reset({ keepSearch: true });
+      // Show success state
+      setBookingSuccess(true);
+      setShowConfirmModal(false);
 
-      router.push(`/booking/confirmation/${data.booking_id}`);
+      // Redirect after showing success state
+      setTimeout(() => {
+        // Clear booking flow state but keep dates/guests for quick re-book
+        reset({ keepSearch: true });
+        router.push(`/booking/confirmation/${data.booking_id}`);
+      }, 2000);
     } catch (err) {
       setNotification({
         show: true,
@@ -258,11 +257,10 @@ export default function BookingCheckoutPage() {
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('cash')}
-                  className={`p-4 rounded-xl border text-left transition-colors ${
-                    state.paymentMethod === 'cash'
-                      ? 'border-primary bg-primary/5'
-                      : 'border-gray-200 bg-white hover:bg-gray-50 dark:bg-slate-900 dark:border-slate-700 dark:hover:bg-slate-800'
-                  }`}
+                  className={`p-4 rounded-xl border text-left transition-colors ${state.paymentMethod === 'cash'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-gray-200 bg-white hover:bg-gray-50 dark:bg-slate-900 dark:border-slate-700 dark:hover:bg-slate-800'
+                    }`}
                 >
                   <div className="font-semibold text-accent dark:text-white">Cash on Arrival</div>
                   <div className="text-xs text-gray-500 dark:text-gray-300">Pay at check-in</div>
@@ -270,11 +268,10 @@ export default function BookingCheckoutPage() {
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('gcash')}
-                  className={`p-4 rounded-xl border text-left transition-colors ${
-                    state.paymentMethod === 'gcash'
-                      ? 'border-primary bg-primary/5'
-                      : 'border-gray-200 bg-white hover:bg-gray-50 dark:bg-slate-900 dark:border-slate-700 dark:hover:bg-slate-800'
-                  }`}
+                  className={`p-4 rounded-xl border text-left transition-colors ${state.paymentMethod === 'gcash'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-gray-200 bg-white hover:bg-gray-50 dark:bg-slate-900 dark:border-slate-700 dark:hover:bg-slate-800'
+                    }`}
                 >
                   <div className="font-semibold text-accent dark:text-white">GCash (Demo)</div>
                   <div className="text-xs text-gray-500 dark:text-gray-300">Simulated payment</div>
@@ -282,11 +279,10 @@ export default function BookingCheckoutPage() {
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('paymaya')}
-                  className={`p-4 rounded-xl border text-left transition-colors ${
-                    state.paymentMethod === 'paymaya'
-                      ? 'border-primary bg-primary/5'
-                      : 'border-gray-200 bg-white hover:bg-gray-50 dark:bg-slate-900 dark:border-slate-700 dark:hover:bg-slate-800'
-                  }`}
+                  className={`p-4 rounded-xl border text-left transition-colors ${state.paymentMethod === 'paymaya'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-gray-200 bg-white hover:bg-gray-50 dark:bg-slate-900 dark:border-slate-700 dark:hover:bg-slate-800'
+                    }`}
                 >
                   <div className="font-semibold text-accent dark:text-white">PayMaya (Demo)</div>
                   <div className="text-xs text-gray-500 dark:text-gray-300">Simulated payment</div>
@@ -330,11 +326,21 @@ export default function BookingCheckoutPage() {
                   Back
                 </button>
                 <PrimaryButton
-                  onClick={handlePlaceOrder}
+                  onClick={() => {
+                    if (!termsAccepted) {
+                      setNotification({
+                        show: true,
+                        message: 'Please accept the terms and cancellation policy before continuing.',
+                        type: 'warning',
+                      });
+                      return;
+                    }
+                    setShowConfirmModal(true);
+                  }}
                   disabled={isSubmitting || loadingProducts}
                   className="w-full sm:w-auto text-center"
                 >
-                  {isSubmitting ? 'Placing Order...' : 'Place Booking'}
+                  Place Booking
                 </PrimaryButton>
               </div>
             </div>
@@ -395,6 +401,122 @@ export default function BookingCheckoutPage() {
       </section>
 
       <Footer />
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full p-6 md:p-8 animate-slideUp">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg
+                  className="w-8 h-8 text-primary"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-accent dark:text-white mb-2">
+                Confirm Your Booking
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300">
+                Are you sure you want to place this booking?
+              </p>
+            </div>
+
+            <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-4 mb-6 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-300">Total Amount:</span>
+                <span className="font-bold text-primary">₱{totalAmount.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-300">Payment:</span>
+                <span className="font-semibold text-accent dark:text-white capitalize">
+                  {state.paymentMethod === 'cash' ? 'Cash on Arrival' : state.paymentMethod}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-300">Guest:</span>
+                <span className="font-semibold text-accent dark:text-white">
+                  {state.guestInfo?.firstName} {state.guestInfo?.lastName}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowConfirmModal(false)}
+                disabled={isSubmitting}
+                className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-300 dark:border-slate-700 text-gray-700 dark:text-white font-semibold hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <PrimaryButton
+                onClick={handlePlaceOrder}
+                disabled={isSubmitting}
+                className="flex-1 text-center"
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        fill="none"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    Processing...
+                  </span>
+                ) : (
+                  'Confirm Booking'
+                )}
+              </PrimaryButton>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success State */}
+      {bookingSuccess && (
+        <div className="fixed inset-0 bg-gradient-to-br from-primary/90 to-secondary/90 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="text-center animate-bounceIn">
+            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl">
+              <svg
+                className="w-12 h-12 text-secondary"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={3}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+            <h2 className="text-4xl font-bold text-white mb-3">Booking Confirmed!</h2>
+            <p className="text-xl text-white/90 mb-2">Your reservation has been placed successfully.</p>
+            <p className="text-white/75">Redirecting to confirmation page...</p>
+          </div>
+        </div>
+      )}
     </>
   );
 }

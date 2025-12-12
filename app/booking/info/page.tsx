@@ -32,7 +32,7 @@ export default function BookingInfoPage() {
   const router = useRouter();
 
   const { user, isAuthenticated } = useAuth();
-  const { state: bookingState, setGuestInfo, setSpecialRequests, setSearch } = useBooking();
+  const { state: bookingState, setGuestInfo, setSpecialRequests } = useBooking();
 
   const bookingType = bookingState.bookingType;
   const checkInDate = bookingState.checkInDate;
@@ -67,8 +67,6 @@ export default function BookingInfoPage() {
   });
 
   const [specialRequestsLocal, setSpecialRequestsLocal] = useState('');
-  const [localCheckIn, setLocalCheckIn] = useState(checkInDate);
-  const [localCheckOut, setLocalCheckOut] = useState(checkOutDate);
 
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [profileAvailable, setProfileAvailable] = useState(false);
@@ -79,52 +77,6 @@ export default function BookingInfoPage() {
 
   const updateField = <K extends keyof GuestInfoForm>(field: K, value: GuestInfoForm[K]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleDateChange = (field: 'checkIn' | 'checkOut', value: string) => {
-    if (!value) {
-      if (field === 'checkIn') setLocalCheckIn('');
-      if (field === 'checkOut') setLocalCheckOut('');
-      return;
-    }
-
-    if (field === 'checkIn') {
-      setLocalCheckIn(value);
-
-      let nextOut = localCheckOut;
-      if (bookingType === 'overnight') {
-        if (!nextOut || new Date(nextOut) <= new Date(value)) {
-          nextOut = value;
-          setLocalCheckOut(nextOut);
-        }
-      }
-
-      setSearch({
-        bookingType,
-        checkInDate: value,
-        checkOutDate: bookingType === 'overnight' ? (nextOut || value) : undefined,
-        adults: form.adults,
-        children: form.children,
-      });
-    } else {
-      // checkOut
-      let normalizedOut = value;
-      if (bookingType === 'overnight' && (localCheckIn || checkInDate)) {
-        const baseIn = localCheckIn || checkInDate;
-        if (new Date(value) <= new Date(baseIn)) {
-          normalizedOut = baseIn;
-        }
-      }
-      setLocalCheckOut(normalizedOut);
-
-      setSearch({
-        bookingType,
-        checkInDate: localCheckIn || checkInDate,
-        checkOutDate: bookingType === 'overnight' ? normalizedOut : undefined,
-        adults: form.adults,
-        children: form.children,
-      });
-    }
   };
 
   const handleUseProfileChange = (checked: boolean) => {
@@ -330,32 +282,14 @@ export default function BookingInfoPage() {
                       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                         Dates
                       </p>
-                      <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                        <div>
-                          <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">
-                            Check-in
-                          </label>
-                          <input
-                            type="date"
-                            value={localCheckIn}
-                            onChange={(e) => handleDateChange('checkIn', e.target.value)}
-                            className="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-800 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                          />
-                        </div>
-                        {bookingType === 'overnight' && (
-                          <div>
-                            <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">
-                              Check-out
-                            </label>
-                            <input
-                              type="date"
-                              value={localCheckOut}
-                              onChange={(e) => handleDateChange('checkOut', e.target.value)}
-                              className="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-800 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                            />
-                          </div>
+                      <p className="mt-1">
+                        {checkInDate ? new Date(checkInDate).toLocaleDateString() : 'Not set'}
+                        {bookingType === 'overnight' && checkOutDate && (
+                          <>
+                            {' '}→ {new Date(checkOutDate).toLocaleDateString()}
+                          </>
                         )}
-                      </div>
+                      </p>
                     </div>
 
                     <div>
@@ -375,7 +309,7 @@ export default function BookingInfoPage() {
                     </p>
                     <div className="grid grid-cols-2 gap-3">
                       <CountSelector
-                        label="Adults*"
+                        label="Adults *"
                         value={form.adults}
                         min={1}
                         onChange={(value) => updateField('adults', value)}

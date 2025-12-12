@@ -235,165 +235,350 @@ export default function BookingCheckoutPage() {
         onClose={() => setNotification((prev) => ({ ...prev, show: false }))}
       />
 
-      <section className="py-16 hero-gradient">
+      <section className="py-20 bg-gradient-to-br from-primary/5 via-white to-secondary/5 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center animate-fadeIn">
-            <h1 className="section-title mb-3">Checkout</h1>
+            <div className="inline-flex items-center gap-2 bg-primary/10 dark:bg-primary/20 px-4 py-2 rounded-full mb-4">
+              <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-sm font-semibold text-primary">Final Step</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold text-accent dark:text-white mb-4">
+              Complete Your Booking
+            </h1>
             <div className="max-w-2xl mx-auto mb-6">
               <BookingStepper current="payment" />
             </div>
-            <p className="section-subtitle mb-4">Review your booking and complete the demo payment.</p>
+            <p className="text-lg text-gray-600 dark:text-gray-300">
+              Review your reservation details and confirm your payment method
+            </p>
           </div>
         </div>
       </section>
 
-      <section className="py-12 bg-white dark:bg-slate-950">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <div className="grid lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 bg-gray-50 dark:bg-accent-dark/70 rounded-2xl shadow-xl p-6 md:p-8">
-              <h2 className="text-2xl font-bold text-accent dark:text-white mb-4">Payment Method (Demo)</h2>
+      <section className="py-16 bg-gradient-to-b from-gray-50 to-white dark:from-slate-950 dark:to-slate-900">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <div className="grid lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              {/* Payment Method Section */}
+              <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-lg hover:shadow-xl transition-shadow duration-300 p-6 md:p-8 border border-gray-100 dark:border-slate-800">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-600 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-accent dark:text-white">Payment Method</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Select your preferred option</p>
+                  </div>
+                </div>
 
-              <div className="grid md:grid-cols-3 gap-3 mb-6">
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('cash')}
-                  className={`p-4 rounded-xl border text-left transition-colors ${state.paymentMethod === 'cash'
-                    ? 'border-primary bg-primary/5'
-                    : 'border-gray-200 bg-white hover:bg-gray-50 dark:bg-slate-900 dark:border-slate-700 dark:hover:bg-slate-800'
-                    }`}
-                >
-                  <div className="font-semibold text-accent dark:text-white">Cash on Arrival</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-300">Pay at check-in</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('gcash')}
-                  className={`p-4 rounded-xl border text-left transition-colors ${state.paymentMethod === 'gcash'
-                    ? 'border-primary bg-primary/5'
-                    : 'border-gray-200 bg-white hover:bg-gray-50 dark:bg-slate-900 dark:border-slate-700 dark:hover:bg-slate-800'
-                    }`}
-                >
-                  <div className="font-semibold text-accent dark:text-white">GCash (Demo)</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-300">Simulated payment</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('paymaya')}
-                  className={`p-4 rounded-xl border text-left transition-colors ${state.paymentMethod === 'paymaya'
-                    ? 'border-primary bg-primary/5'
-                    : 'border-gray-200 bg-white hover:bg-gray-50 dark:bg-slate-900 dark:border-slate-700 dark:hover:bg-slate-800'
-                    }`}
-                >
-                  <div className="font-semibold text-accent dark:text-white">PayMaya (Demo)</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-300">Simulated payment</div>
-                </button>
-              </div>
-
-              <div className="rounded-xl border border-gray-200 bg-white p-5 dark:bg-slate-900 dark:border-slate-700">
-                <h3 className="font-semibold text-accent dark:text-white mb-2">Guest Details</h3>
-                <div className="text-sm text-gray-600 dark:text-gray-300">
-                  <div>
-                    <strong>Name:</strong> {state.guestInfo?.firstName} {state.guestInfo?.lastName}
-                  </div>
-                  <div>
-                    <strong>Email:</strong> {state.guestInfo?.email}
-                  </div>
-                  <div>
-                    <strong>Phone:</strong> {state.guestInfo?.phone}
-                  </div>
+                <div className="grid md:grid-cols-3 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('cash')}
+                    className={`group relative p-5 rounded-2xl border-2 text-left transition-all duration-300 ${state.paymentMethod === 'cash'
+                      ? 'border-primary bg-gradient-to-br from-primary/10 to-primary/5 shadow-lg shadow-primary/20 scale-105'
+                      : 'border-gray-200 bg-white hover:border-primary/50 hover:shadow-md dark:bg-slate-800 dark:border-slate-700 dark:hover:border-primary/50'
+                      }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${state.paymentMethod === 'cash'
+                        ? 'bg-primary text-white'
+                        : 'bg-gray-100 text-gray-400 group-hover:bg-primary/10 group-hover:text-primary dark:bg-slate-700'
+                        }`}>
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-bold text-accent dark:text-white mb-1">Cash on Arrival</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Pay at check-in</div>
+                      </div>
+                    </div>
+                    {state.paymentMethod === 'cash' && (
+                      <div className="absolute top-3 right-3">
+                        <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('gcash')}
+                    className={`group relative p-5 rounded-2xl border-2 text-left transition-all duration-300 ${state.paymentMethod === 'gcash'
+                      ? 'border-primary bg-gradient-to-br from-primary/10 to-primary/5 shadow-lg shadow-primary/20 scale-105'
+                      : 'border-gray-200 bg-white hover:border-primary/50 hover:shadow-md dark:bg-slate-800 dark:border-slate-700 dark:hover:border-primary/50'
+                      }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${state.paymentMethod === 'gcash'
+                        ? 'bg-primary text-white'
+                        : 'bg-gray-100 text-gray-400 group-hover:bg-primary/10 group-hover:text-primary dark:bg-slate-700'
+                        }`}>
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-bold text-accent dark:text-white mb-1">GCash</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Demo payment</div>
+                      </div>
+                    </div>
+                    {state.paymentMethod === 'gcash' && (
+                      <div className="absolute top-3 right-3">
+                        <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('paymaya')}
+                    className={`group relative p-5 rounded-2xl border-2 text-left transition-all duration-300 ${state.paymentMethod === 'paymaya'
+                      ? 'border-primary bg-gradient-to-br from-primary/10 to-primary/5 shadow-lg shadow-primary/20 scale-105'
+                      : 'border-gray-200 bg-white hover:border-primary/50 hover:shadow-md dark:bg-slate-800 dark:border-slate-700 dark:hover:border-primary/50'
+                      }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${state.paymentMethod === 'paymaya'
+                        ? 'bg-primary text-white'
+                        : 'bg-gray-100 text-gray-400 group-hover:bg-primary/10 group-hover:text-primary dark:bg-slate-700'
+                        }`}>
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-bold text-accent dark:text-white mb-1">PayMaya</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Demo payment</div>
+                      </div>
+                    </div>
+                    {state.paymentMethod === 'paymaya' && (
+                      <div className="absolute top-3 right-3">
+                        <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+                  </button>
                 </div>
               </div>
 
-              <div className="mt-6 flex items-start gap-3">
-                <input
-                  id="terms"
-                  type="checkbox"
-                  checked={termsAccepted}
-                  onChange={(e) => setTermsAccepted(e.target.checked)}
-                  className="mt-1"
-                />
-                <label htmlFor="terms" className="text-sm text-gray-600 dark:text-gray-300">
-                  I agree to the resort house rules and cancellation policy. (Demo)
-                </label>
-              </div>
+              {/* Guest Details Section */}
+              <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-lg hover:shadow-xl transition-shadow duration-300 p-6 md:p-8 border border-gray-100 dark:border-slate-800">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-secondary to-secondary-600 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-accent dark:text-white">Guest Information</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Your contact details</p>
+                  </div>
+                </div>
 
-              <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                <button
-                  type="button"
-                  onClick={() => router.push('/booking/info')}
-                  className="btn-outline w-full sm:w-auto text-center"
-                >
-                  Back
-                </button>
-                <PrimaryButton
-                  onClick={() => {
-                    if (!termsAccepted) {
-                      setNotification({
-                        show: true,
-                        message: 'Please accept the terms and cancellation policy before continuing.',
-                        type: 'warning',
-                      });
-                      return;
-                    }
-                    setShowConfirmModal(true);
-                  }}
-                  disabled={isSubmitting || loadingProducts}
-                  className="w-full sm:w-auto text-center"
-                >
-                  Place Booking
-                </PrimaryButton>
+                <div className="grid md:grid-cols-2 gap-4 text-sm">
+                  <div className="p-4 rounded-xl bg-gray-50  dark:bg-slate-800">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Full Name</div>
+                    <div className="font-semibold text-accent dark:text-white">
+                      {state.guestInfo?.firstName} {state.guestInfo?.lastName}
+                    </div>
+                  </div>
+                  <div className="p-4 rounded-xl bg-gray-50 dark:bg-slate-800">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Email Address</div>
+                    <div className="font-semibold text-accent dark:text-white break-all">{state.guestInfo?.email}</div>
+                  </div>
+                  <div className="p-4 rounded-xl bg-gray-50 dark:bg-slate-800 md:col-span-2">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Phone Number</div>
+                    <div className="font-semibold text-accent dark:text-white">{state.guestInfo?.phone}</div>
+                  </div>
+                </div>
+
+                {/* Terms and Conditions */}
+                <div className="mt-8 p-5 rounded-2xl bg-gradient-to-br from-primary/5 to-secondary/5 dark:from-slate-800 dark:to-slate-800 border border-primary/20 dark:border-slate-700">
+                  <div className="flex items-start gap-3">
+                    <input
+                      id="terms"
+                      type="checkbox"
+                      checked={termsAccepted}
+                      onChange={(e) => setTermsAccepted(e.target.checked)}
+                      className="mt-1 w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                    />
+                    <label htmlFor="terms" className="text-sm text-gray-700 dark:text-gray-300 flex-1">
+                      I agree to the resort house rules and cancellation policy. I understand this is a demo booking system.
+                    </label>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                  <button
+                    type="button"
+                    onClick={() => router.push('/booking/info')}
+                    className="px-6 py-3 rounded-xl border-2 border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-white font-semibold hover:bg-gray-50 dark:hover:bg-slate-700 transition-all duration-200 w-full sm:w-auto text-center"
+                  >
+                    ← Back
+                  </button>
+                  <PrimaryButton
+                    onClick={() => {
+                      if (!termsAccepted) {
+                        setNotification({
+                          show: true,
+                          message: 'Please accept the terms and cancellation policy before continuing.',
+                          type: 'warning',
+                        });
+                        return;
+                      }
+                      setShowConfirmModal(true);
+                    }}
+                    disabled={isSubmitting || loadingProducts}
+                    className="w-full sm:flex-1 text-center"
+                  >
+                    Place Booking →
+                  </PrimaryButton>
+                </div>
               </div>
             </div>
 
-            <aside className="bg-gray-50 dark:bg-accent-dark/70 rounded-2xl shadow-xl p-6 md:p-8">
-              <h2 className="text-xl font-bold text-accent dark:text-white mb-4">Order Summary</h2>
-
-              <div className="text-sm text-gray-600 dark:text-gray-300 space-y-1 mb-4">
-                <div>
-                  <strong>Type:</strong> {state.bookingType === 'overnight' ? 'Overnight' : 'Day Use'}
-                </div>
-                <div>
-                  <strong>{state.bookingType === 'overnight' ? 'Check-in' : 'Date'}:</strong>{' '}
-                  {state.checkInDate ? new Date(state.checkInDate).toLocaleDateString() : '—'}
-                </div>
-                {state.bookingType === 'overnight' && (
-                  <div>
-                    <strong>Check-out:</strong> {state.checkOutDate ? new Date(state.checkOutDate).toLocaleDateString() : '—'}
+            {/* Order Summary Sidebar */}
+            <aside className="lg:sticky lg:top-6 h-fit">
+              <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-lg hover:shadow-xl transition-shadow duration-300 p-6 md:p-8 border border-gray-100 dark:border-slate-800">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-accent-light flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
                   </div>
-                )}
-                {state.bookingType === 'overnight' && (
                   <div>
-                    <strong>Nights:</strong> {numNights}
+                    <h2 className="text-xl font-bold text-accent dark:text-white">Order Summary</h2>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Review your booking</p>
                   </div>
-                )}
-                <div>
-                  <strong>Guests:</strong> {state.adults} adults, {state.children} kids
                 </div>
-              </div>
 
-              <div className="divide-y divide-gray-200 dark:divide-slate-700">
-                {loadingProducts ? (
-                  <div className="py-4 text-sm text-gray-500">Loading summary...</div>
-                ) : (
-                  lineItems.map((li) => (
-                    <div key={`${li.kind}-${li.id}`} className="py-3 flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="font-semibold text-accent dark:text-white truncate">{li.title}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-300">Qty: {li.qty}</div>
-                      </div>
-                      <div className="text-sm font-bold text-primary">₱{li.subtotal.toLocaleString()}</div>
+                {/* Booking Details */}
+                <div className="space-y-3 mb-6 p-4 rounded-xl bg-gradient-to-br from-gray-50 to-white dark:from-slate-800 dark:to-slate-800 border border-gray-100 dark:border-slate-700">
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                      </svg>
+                      <span>Type</span>
                     </div>
-                  ))
-                )}
-              </div>
+                    <div className="font-semibold text-accent dark:text-white">
+                      {state.bookingType === 'overnight' ? 'Overnight' : 'Day Use'}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span>{state.bookingType === 'overnight' ? 'Check-in' : 'Date'}</span>
+                    </div>
+                    <div className="font-semibold text-accent dark:text-white">
+                      {state.checkInDate ? new Date(state.checkInDate).toLocaleDateString() : '—'}
+                    </div>
+                  </div>
+                  {state.bookingType === 'overnight' && (
+                    <>
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span>Check-out</span>
+                        </div>
+                        <div className="font-semibold text-accent dark:text-white">
+                          {state.checkOutDate ? new Date(state.checkOutDate).toLocaleDateString() : '—'}
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                          </svg>
+                          <span>Nights</span>
+                        </div>
+                        <div className="font-semibold text-primary">{numNights}</div>
+                      </div>
+                    </>
+                  )}
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                      <span>Guests</span>
+                    </div>
+                    <div className="font-semibold text-accent dark:text-white">
+                      {state.adults} adults, {state.children} kids
+                    </div>
+                  </div>
+                </div>
 
-              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-slate-700 flex items-center justify-between">
-                <div className="text-sm text-gray-600 dark:text-gray-300 font-semibold">Total</div>
-                <div className="text-2xl font-bold text-primary">₱{totalAmount.toLocaleString()}</div>
-              </div>
+                {/* Line Items */}
+                <div className="space-y-3 mb-6">
+                  <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Items
+                  </div>
+                  {loadingProducts ? (
+                    <div className="py-8 text-center">
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-200 border-t-primary"></div>
+                      <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Loading...</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {lineItems.map((li) => (
+                        <div
+                          key={`${li.kind}-${li.id}`}
+                          className="flex items-start justify-between gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="font-semibold text-sm text-accent dark:text-white truncate">{li.title}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">Qty: {li.qty}</div>
+                          </div>
+                          <div className="text-sm font-bold text-primary whitespace-nowrap">
+                            ₱{li.subtotal.toLocaleString()}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
-              <div className="mt-3 text-xs text-gray-500 dark:text-gray-300">
-                Demo payment only. This will create a booking record and email confirmation (if Mailtrap is configured).
+                {/* Total */}
+                <div className="pt-6 border-t-2 border-gray-200 dark:border-slate-700">
+                  <div className="flex items-end justify-between mb-4">
+                    <div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Total Amount</div>
+                      <div className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                        ₱{totalAmount.toLocaleString()}
+                      </div>
+                    </div>
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center">
+                      <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
+                    <div className="flex items-start gap-2">
+                      <svg className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                      <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+                        Demo payment only. This will create a booking record and send an email confirmation if Mailtrap is configured.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </aside>
           </div>

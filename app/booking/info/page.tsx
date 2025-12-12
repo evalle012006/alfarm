@@ -152,17 +152,23 @@ export default function BookingInfoPage() {
       <Navigation />
 
       {/* Hero Section */}
-      <section className="py-16 hero-gradient">
+      <section className="py-12 md:py-20 bg-gradient-to-br from-primary/5 via-white to-secondary/5 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center animate-fadeIn">
-            <h1 className="section-title mb-3">Guest Information</h1>
+            <div className="inline-flex items-center gap-2 bg-primary/10 dark:bg-primary/20 px-4 py-2 rounded-full mb-4">
+              <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span className="text-sm font-semibold text-primary">Step 3 of 4</span>
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold text-accent dark:text-white mb-4">Guest Information</h1>
             <div className="max-w-2xl mx-auto mb-6">
               <BookingStepper current="details" />
             </div>
-            <p className="section-subtitle mb-4">
+            <p className="text-base md:text-lg text-gray-600 dark:text-gray-300 mb-2">
               Tell us who&apos;s staying so we can prepare everything for your visit.
             </p>
-            <p className="text-gray-600 dark:text-white text-sm">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               You&apos;ll review your stay details and confirm your booking on the next step.
             </p>
           </div>
@@ -170,28 +176,40 @@ export default function BookingInfoPage() {
       </section>
 
       {/* Form Section */}
-      <section className="py-12 bg-white dark:bg-slate-950">
+      <section className="py-8 md:py-12 bg-gradient-to-b from-gray-50 to-white dark:from-slate-950 dark:to-slate-900">
         <div className="container mx-auto px-4 max-w-4xl">
-          <div className="bg-gray-50 dark:bg-accent-dark/70 rounded-2xl shadow-xl p-6 md:p-10">
-            <h2 className="text-2xl font-bold text-accent dark:text-white mb-6">Contact Details</h2>
+          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-lg border border-gray-200 dark:border-slate-800 p-4 md:p-6 lg:p-10">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-600 flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-xl md:text-2xl font-bold text-accent dark:text-white">Contact Details</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Please provide your information</p>
+              </div>
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-8">
               {/* Profile Shortcut */}
-              <div className="flex items-center justify-between gap-4">
-                <p className="text-sm text-gray-600 dark:text-white">
-                  Logged in? You can pull your saved details to speed things up.
-                </p>
-                <Checkbox
-                  label="Use my profile details"
-                  checked={form.useProfile}
-                  onChange={handleUseProfileChange}
-                  disabled={!profileAvailable}
-                  className={profileAvailable ? '' : 'opacity-60 cursor-not-allowed'}
-                />
+              <div className="p-4 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-100 dark:border-blue-800">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    Logged in? You can pull your saved details to speed things up.
+                  </p>
+                  <Checkbox
+                    label="Use my profile details"
+                    checked={form.useProfile}
+                    onChange={handleUseProfileChange}
+                    disabled={!profileAvailable}
+                    className={profileAvailable ? '' : 'opacity-60 cursor-not-allowed'}
+                  />
+                </div>
               </div>
 
               {/* Name fields */}
-              <div className="grid md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <FormInput
                   label="First name *"
                   value={form.firstName}
@@ -215,7 +233,7 @@ export default function BookingInfoPage() {
               </div>
 
               {/* Contact fields */}
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormInput
                   label="Email address *"
                   type="email"
@@ -235,14 +253,21 @@ export default function BookingInfoPage() {
               </div>
 
               {/* Guests */}
-              <div className="rounded-lg border border-slate-200 bg-white/80 px-4 py-3 text-sm text-gray-700 dark:border-slate-700 dark:bg-slate-900/60 dark:text-gray-200">
-                <p className="mb-1 font-medium">Guests</p>
-                <p>
-                  Headcount is managed in the <span className="font-semibold">Booking Summary</span> section below.
-                </p>
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Current: {form.adults} Adults, {form.children} Children
-                </p>
+              <div className="rounded-xl border-2 border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-900/20 px-4 py-3 text-sm">
+                <div className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-800 dark:text-gray-200 mb-1">Guests</p>
+                    <p className="text-gray-700 dark:text-gray-300">
+                      Headcount is managed in the <span className="font-semibold">Booking Summary</span> section below.
+                    </p>
+                    <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                      Current: {form.adults} Adults, {form.children} Children
+                    </p>
+                  </div>
+                </div>
               </div>
 
               {/* Notes */}
@@ -254,32 +279,39 @@ export default function BookingInfoPage() {
                   rows={4}
                   value={specialRequestsLocal}
                   onChange={(e) => setSpecialRequestsLocal(e.target.value)}
-                  className="input-field bg-white text-black"
+                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200"
                   placeholder="Allergies, late check-in, celebration notes, etc."
                 ></textarea>
               </div>
 
               {/* Booking Summary */}
-              <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
-                <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                      Review your stay
-                    </p>
-                    <h3 className="text-lg font-semibold text-accent dark:text-white">
-                      Booking Summary
-                    </h3>
+              <div className="rounded-2xl border-2 border-primary/20 bg-gradient-to-br from-white to-gray-50 dark:from-slate-900 dark:to-slate-800 p-5 md:p-6 shadow-lg">
+                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-accent-light flex items-center justify-center">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                        Review your stay
+                      </p>
+                      <h3 className="text-lg font-bold text-accent dark:text-white">
+                        Booking Summary
+                      </h3>
+                    </div>
                   </div>
-                  <span className="inline-flex items-center rounded-full border border-sky-500/40 bg-sky-500/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-sky-700 dark:border-sky-400/40 dark:bg-sky-500/15 dark:text-sky-200">
+                  <span className="inline-flex items-center rounded-full bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary dark:border-primary/30">
                     {bookingType === 'overnight' ? 'Overnight Stay' : 'Day Use'}
                   </span>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-2">
                   {/* Dates & items */}
                   <div className="space-y-3 text-sm text-gray-700 dark:text-gray-300">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                         Dates
                       </p>
                       <p className="mt-1">
@@ -293,7 +325,7 @@ export default function BookingInfoPage() {
                     </div>
 
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                         Selection
                       </p>
                       <p className="mt-1">
@@ -304,7 +336,7 @@ export default function BookingInfoPage() {
 
                   {/* Editable headcount */}
                   <div className="space-y-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                       Headcount
                     </p>
                     <div className="grid grid-cols-2 gap-3">
@@ -324,7 +356,7 @@ export default function BookingInfoPage() {
                         helperText="0 - 12 yrs"
                       />
                     </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       Adjust adults and children here. We&apos;ll use this for your booking records and fees.
                     </p>
                   </div>
@@ -338,24 +370,24 @@ export default function BookingInfoPage() {
                 </div>
               )}
 
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-4 border-t border-gray-200 dark:border-slate-700">
-                <p className="text-xs text-gray-500 dark:text-white max-w-md">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-6 border-t-2 border-gray-200 dark:border-slate-700">
+                <p className="text-xs text-gray-500 dark:text-gray-400 max-w-md">
                   By continuing, you agree to our house rules and cancellation policy. You&apos;ll see a
                   final summary of your stay before confirming the booking.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
                   <Link
                     href="/booking/results"
-                    className="btn-outline w-full sm:w-auto text-center"
+                    className="px-6 py-3 rounded-xl border-2 border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-white font-semibold hover:bg-gray-50 dark:hover:bg-slate-700 transition-all duration-200 w-full sm:w-auto text-center"
                   >
-                    Back
+                    ← Back
                   </Link>
                   <PrimaryButton
                     type="submit"
-                    className="w-full sm:w-auto text-center"
+                    className="w-full sm:w-auto text-center px-6 py-3"
                     disabled={isSubmitting}
                   >
-                    {isSubmitting ? 'Continuing...' : 'Continue to Payment'}
+                    {isSubmitting ? 'Continuing...' : 'Continue to Payment →'}
                   </PrimaryButton>
                 </div>
               </div>

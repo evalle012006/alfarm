@@ -10,9 +10,11 @@ import PrimaryButton from '@/components/ui/PrimaryButton';
 import TagToggle from '@/components/ui/TagToggle';
 import CountSelector from '@/components/ui/CountSelector';
 import Notification, { NotificationType } from '@/components/ui/Notification';
+import { useBooking } from '@/lib/BookingContext';
 
 export default function Home() {
   const router = useRouter();
+  const { reset, setSearch } = useBooking();
   const [bookingType, setBookingType] = useState('Day-use');
   const [checkInDate, setCheckInDate] = useState('');
   const [checkOutDate, setCheckOutDate] = useState('');
@@ -77,9 +79,19 @@ export default function Home() {
       });
       return;
     }
+
+    const normalizedType = bookingType === 'Day-use' ? 'day' : 'overnight';
+    reset({ keepSearch: false });
+    setSearch({
+      bookingType: normalizedType,
+      checkInDate,
+      checkOutDate: normalizedType === 'overnight' ? checkOutDate : undefined,
+      adults,
+      children,
+    });
     
     const params = new URLSearchParams({
-      type: bookingType === 'Day-use' ? 'day' : 'overnight',
+      type: normalizedType,
       check_in: checkInDate,
       adults: adults.toString(),
       children: children.toString(),

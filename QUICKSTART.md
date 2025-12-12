@@ -116,6 +116,7 @@ The application is now running with:
 - ✅ Guest registration with shadow account claiming
 - ✅ PostgreSQL database connected
 - ✅ Booking system with date-range support
+- ✅ Step-based checkout flow (Select → Details → Payment → Confirmation)
 - ✅ Email notifications (if Mailtrap configured)
 
 ## 🎯 What to Do Next
@@ -129,7 +130,10 @@ The application is now running with:
    - Select Day Use or Overnight on homepage
    - Pick dates and search availability
    - Add items to cart and checkout
+   - Complete demo payment and view confirmation page
    - Check your email (Mailtrap inbox)
+
+   **Note:** Checkout totals include entrance fees pulled from your database (`Entrance Fee` category). Ensure your seed data exists (Adult/Kid for Day/Night) by importing `database/schema.sql`.
 
 3. **Test Admin Features**
    - Login as admin at `/admin/login`

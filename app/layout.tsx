@@ -1,6 +1,7 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
 import { AuthProvider } from '@/lib/AuthContext'
+import { BookingProvider } from '@/lib/BookingContext'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -21,7 +22,9 @@ export default function RootLayout({
         className={`${inter.className} bg-white text-slate-900 dark:bg-slate-950 dark:text-white`}
       >
         <AuthProvider>
-          {children}
+          <BookingProvider>
+            {children}
+          </BookingProvider>
         </AuthProvider>
       </body>
     </html>

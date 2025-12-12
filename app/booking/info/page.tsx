@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
@@ -9,6 +9,9 @@ import PrimaryButton from '@/components/ui/PrimaryButton';
 import FormInput from '@/components/ui/FormInput';
 import Checkbox from '@/components/ui/Checkbox';
 import CountSelector from '@/components/ui/CountSelector';
+import BookingStepper from '@/components/BookingStepper';
+import { useAuth } from '@/lib/AuthContext';
+import { getBookingCartItems, useBooking } from '@/lib/BookingContext';
 
 interface GuestInfoForm {
   firstName: string;
@@ -25,40 +28,30 @@ interface ValidationErrors {
   [key: string]: string | undefined;
 }
 
-interface StoredUserProfile {
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  phone?: string;
-}
-
-interface CartItem {
-  product_id: number;
-  quantity: number;
-}
-
 export default function BookingInfoPage() {
-  const searchParams = useSearchParams();
   const router = useRouter();
 
-  // Extract booking details from URL params
-  const bookingType = searchParams.get('type') || 'day';
-  const checkInDate = searchParams.get('check_in') || '';
-  const checkOutDate = searchParams.get('check_out') || '';
-  const urlAdults = parseInt(searchParams.get('adults') || '2');
-  const urlChildren = parseInt(searchParams.get('children') || '0');
+  const { user, isAuthenticated } = useAuth();
+  const { state: bookingState, setGuestInfo, setSpecialRequests } = useBooking();
 
-  // Extract cart items from URL params
-  const cartItems: CartItem[] = [];
-  searchParams.forEach((value, key) => {
-    if (key.startsWith('item_')) {
-      const productId = parseInt(key.replace('item_', ''));
-      const quantity = parseInt(value);
-      if (productId && quantity > 0) {
-        cartItems.push({ product_id: productId, quantity });
-      }
+  const bookingType = bookingState.bookingType;
+  const checkInDate = bookingState.checkInDate;
+  const checkOutDate = bookingState.checkOutDate;
+  const cartItems = getBookingCartItems(bookingState.cart);
+
+  useEffect(() => {
+    // Guard: require search step completed
+    if (!checkInDate) {
+      router.push('/');
+      return;
     }
-  });
+
+    // For overnight, require check-out
+    if (bookingType === 'overnight' && !checkOutDate) {
+      router.push('/');
+      return;
+    }
+  }, [bookingType, checkInDate, checkOutDate, router]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -68,27 +61,18 @@ export default function BookingInfoPage() {
     lastName: '',
     email: '',
     phone: '',
-    adults: urlAdults,
-    children: urlChildren,
+    adults: bookingState.adults,
+    children: bookingState.children,
     useProfile: false,
   });
 
-  const [specialRequests, setSpecialRequests] = useState('');
+  const [specialRequestsLocal, setSpecialRequestsLocal] = useState('');
 
   const [errors, setErrors] = useState<ValidationErrors>({});
-  const [profile, setProfile] = useState<StoredUserProfile | null>(null);
+  const [profileAvailable, setProfileAvailable] = useState(false);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const stored = localStorage.getItem('user');
-      if (stored) {
-        const parsed = JSON.parse(stored) as StoredUserProfile;
-        setProfile(parsed);
-      }
-    } catch {
-      // ignore parsing errors
-    }
+    setProfileAvailable(Boolean(isAuthenticated && user));
   }, []);
 
   const updateField = <K extends keyof GuestInfoForm>(field: K, value: GuestInfoForm[K]) => {
@@ -98,11 +82,11 @@ export default function BookingInfoPage() {
   const handleUseProfileChange = (checked: boolean) => {
     setForm((prev) => {
       const next: GuestInfoForm = { ...prev, useProfile: checked };
-      if (checked && profile) {
-        next.firstName = profile.firstName ?? next.firstName;
-        next.lastName = profile.lastName ?? next.lastName;
-        next.email = profile.email ?? next.email;
-        next.phone = profile.phone ?? next.phone;
+      if (checked && user) {
+        next.firstName = user.firstName ?? next.firstName;
+        next.lastName = user.lastName ?? next.lastName;
+        next.email = user.email ?? next.email;
+        next.phone = user.phone ?? next.phone;
       }
       return next;
     });
@@ -142,36 +126,18 @@ export default function BookingInfoPage() {
     setSubmitError(null);
 
     try {
-      const bookingPayload = {
-        guest_info: {
-          first_name: form.firstName,
-          last_name: form.lastName,
-          email: form.email,
-          phone: form.phone,
-        },
-        booking_date: checkInDate,
-        check_out_date: bookingType === 'overnight' ? checkOutDate : null,
-        booking_type: bookingType,
-        items: cartItems,
-        special_requests: specialRequests || null,
-      };
-
-      const response = await fetch('/api/bookings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(bookingPayload),
+      setGuestInfo({
+        firstName: form.firstName,
+        middleName: form.middleName,
+        lastName: form.lastName,
+        email: form.email,
+        phone: form.phone,
+        adults: form.adults,
+        children: form.children,
       });
+      setSpecialRequests(specialRequestsLocal);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create booking');
-      }
-
-      // Success - redirect to confirmation or guest dashboard
-      // For now, show success and redirect to home
-      alert(`Booking created successfully! Booking ID: ${data.booking_id}\nTotal: ₱${data.total_amount.toLocaleString()}`);
-      router.push('/');
+      router.push('/booking/checkout');
 
     } catch (error) {
       console.error('Booking submission error:', error);
@@ -190,6 +156,9 @@ export default function BookingInfoPage() {
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center animate-fadeIn">
             <h1 className="section-title mb-3">Guest Information</h1>
+            <div className="max-w-2xl mx-auto mb-6">
+              <BookingStepper current="details" />
+            </div>
             <p className="section-subtitle mb-4">
               Tell us who&apos;s staying so we can prepare everything for your visit.
             </p>
@@ -216,8 +185,8 @@ export default function BookingInfoPage() {
                   label="Use my profile details"
                   checked={form.useProfile}
                   onChange={handleUseProfileChange}
-                  disabled={!profile}
-                  className={profile ? '' : 'opacity-60 cursor-not-allowed'}
+                  disabled={!profileAvailable}
+                  className={profileAvailable ? '' : 'opacity-60 cursor-not-allowed'}
                 />
               </div>
 
@@ -291,8 +260,8 @@ export default function BookingInfoPage() {
                 </label>
                 <textarea
                   rows={4}
-                  value={specialRequests}
-                  onChange={(e) => setSpecialRequests(e.target.value)}
+                  value={specialRequestsLocal}
+                  onChange={(e) => setSpecialRequestsLocal(e.target.value)}
                   className="input-field bg-white text-black"
                   placeholder="Allergies, late check-in, celebration notes, etc."
                 ></textarea>
@@ -335,7 +304,7 @@ export default function BookingInfoPage() {
                     className="w-full sm:w-auto text-center"
                     disabled={isSubmitting}
                   >
-                    {isSubmitting ? 'Submitting...' : 'Confirm Booking'}
+                    {isSubmitting ? 'Continuing...' : 'Continue to Payment'}
                   </PrimaryButton>
                 </div>
               </div>

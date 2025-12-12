@@ -22,8 +22,9 @@ A full-stack resort management system with a beautiful public website built with
 - ✅ Personal dashboard
 - ✅ Browse available rooms and pricing
 - ✅ Check availability with real-time filtering (Day-use/Overnight)
-- ✅ Cart system with live price estimation
-- ✅ Complete checkout process with date-range support
+- ✅ Availability selection with real-time remaining inventory (`/api/availability`)
+- ✅ Cart system with live price estimation (persisted during booking flow)
+- ✅ Step-based checkout flow: Select → Details → Payment → Confirmation
 - ✅ View booking history API
 - 🚧 Manage profile (to be implemented)
 
@@ -185,13 +186,16 @@ alfarm/
 │   │   └── dashboard/          # Guest dashboard
 │   ├── booking/                 # Booking flow
 │   │   ├── info/               # Guest info collection
-│   │   └── results/            # Booking confirmation
+│   │   ├── results/            # Availability selection
+│   │   ├── checkout/           # Demo payment + final booking submission
+│   │   └── confirmation/[id]/  # Confirmation screen
 │   ├── api/                     # API routes
 │   │   └── auth/               # Authentication endpoints
 │   ├── globals.css             # Global styles
 │   └── layout.tsx              # Root layout
 ├── components/
 │   ├── ui/                     # UI components
+│   ├── BookingStepper.tsx      # Booking flow stepper
 │   ├── Navigation.tsx          # Main navigation
 │   └── Footer.tsx              # Footer component
 ├── database/
@@ -200,6 +204,7 @@ alfarm/
 │   ├── db.ts                   # Database connection
 │   ├── auth.ts                 # Authentication utilities
 │   ├── AuthContext.tsx         # React auth context provider
+│   ├── BookingContext.tsx      # Booking flow state (sessionStorage-backed)
 │   ├── authMiddleware.ts       # API route auth middleware
 │   └── email.ts                # Email service (Nodemailer)
 ├── public/
@@ -241,6 +246,18 @@ The website uses AlFarm's brand colors:
 ### Guest Bookings
 - `GET /api/bookings/history` - Get authenticated user's booking history
 - `POST /api/bookings` - Create new reservation (with validation & email)
+
+## 🧭 Direct Booking Flow (UI)
+
+The booking flow is a multi-step process powered by a global booking state store (`BookingContext`) persisted in `sessionStorage`:
+
+- `GET /` (Home) - choose booking type, dates, and guests
+- `GET /booking/results` - select items and see remaining inventory
+- `GET /booking/info` - enter guest details (auto-fill available if logged in)
+- `GET /booking/checkout` - demo payment + final review, then submits `POST /api/bookings`
+- `GET /booking/confirmation/[id]` - confirmation screen
+
+**Important:** checkout totals include entrance fees pulled from the database. Ensure the schema seed data for the `Entrance Fee` category exists (Adult/Kid for Day/Night).
 
 ### Admin Bookings (Protected - requires admin/root role)
 - `GET /api/admin/bookings` - List all bookings with filters
@@ -291,6 +308,10 @@ npm run dev -- -p 3001
 - Verify the email is `admin@alfarm.com` and password is `admin123`
 - Check database connection and that `.env.local` is configured correctly
 - Check browser console for error messages
+
+### Checkout shows missing entrance fees
+- Ensure your database has `Entrance Fee` products seeded (Adult/Kid for Day/Night)
+- Re-run the schema seed (`database/schema.sql`) or insert the missing products manually
 
 ## 📦 Build for Production
 

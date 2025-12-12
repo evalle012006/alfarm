@@ -5,8 +5,9 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import PrimaryButton from '@/components/ui/PrimaryButton';
-import CountSelector from '@/components/ui/CountSelector';
 import Notification, { NotificationType } from '@/components/ui/Notification';
+import BookingStepper from '@/components/BookingStepper';
+import { useBooking } from '@/lib/BookingContext';
 
 interface ProductOption {
   id: number;
@@ -18,15 +19,22 @@ interface ProductOption {
   category: string;
 }
 
+interface AvailabilityItem {
+  id: number;
+  remaining: number;
+  is_available: boolean;
+}
+
 export default function BookingResultsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { state: bookingState, setSearch, incrementCart, setCartQuantity } = useBooking();
   
-  const searchType = searchParams.get('type') || 'day';
-  const checkInDate = searchParams.get('check_in') || searchParams.get('date') || '';
-  const checkOutDate = searchParams.get('check_out') || '';
-  const searchAdults = parseInt(searchParams.get('adults') || '2');
-  const searchChildren = parseInt(searchParams.get('children') || '0');
+  const searchType = (searchParams.get('type') || bookingState.bookingType || 'day') as 'day' | 'overnight';
+  const checkInDate = searchParams.get('check_in') || searchParams.get('date') || bookingState.checkInDate || '';
+  const checkOutDate = searchParams.get('check_out') || bookingState.checkOutDate || '';
+  const searchAdults = parseInt(searchParams.get('adults') || bookingState.adults.toString() || '2');
+  const searchChildren = parseInt(searchParams.get('children') || bookingState.children.toString() || '0');
 
   // Calculate number of nights for overnight stays
   const numNights = searchType === 'overnight' && checkInDate && checkOutDate
@@ -37,7 +45,8 @@ export default function BookingResultsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>('all');
-  const [cart, setCart] = useState<{ [key: number]: number }>({});
+  const cart = bookingState.cart;
+  const [availabilityMap, setAvailabilityMap] = useState<Record<number, AvailabilityItem>>({});
   const [notification, setNotification] = useState<{
     show: boolean;
     message: string;
@@ -45,6 +54,19 @@ export default function BookingResultsPage() {
   }>({ show: false, message: '', type: 'error' });
 
   useEffect(() => {
+    if (!checkInDate) {
+      router.push('/');
+      return;
+    }
+
+    setSearch({
+      bookingType: searchType,
+      checkInDate,
+      checkOutDate: searchType === 'overnight' ? checkOutDate : undefined,
+      adults: searchAdults,
+      children: searchChildren,
+    });
+
     async function fetchProducts() {
       try {
         const response = await fetch('/api/products');
@@ -61,7 +83,42 @@ export default function BookingResultsPage() {
       }
     }
 
+    async function fetchAvailability() {
+      try {
+        const params = new URLSearchParams({
+          type: searchType,
+          check_in: checkInDate,
+        });
+        if (searchType === 'overnight') {
+          params.append('check_out', checkOutDate);
+          params.append('time_slot', 'night');
+        } else {
+          params.append('time_slot', 'day');
+        }
+
+        const response = await fetch(`/api/availability?${params.toString()}`);
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data?.error || 'Failed to check availability');
+        }
+        const data = await response.json();
+        const nextMap: Record<number, AvailabilityItem> = {};
+        (data.availability || []).forEach((item: AvailabilityItem) => {
+          nextMap[item.id] = item;
+        });
+        setAvailabilityMap(nextMap);
+      } catch (err) {
+        console.error(err);
+        setNotification({
+          show: true,
+          message: err instanceof Error ? err.message : 'Failed to check availability',
+          type: 'warning',
+        });
+      }
+    }
+
     fetchProducts();
+    fetchAvailability();
   }, []);
 
   // Filter products based on booking type and excluding entrance fees
@@ -84,13 +141,21 @@ export default function BookingResultsPage() {
   });
 
   const updateCart = (productId: number, delta: number) => {
-    setCart(prev => {
-      const current = prev[productId] || 0;
-      const next = Math.max(0, current + delta);
-      const newCart = { ...prev, [productId]: next };
-      if (next === 0) delete newCart[productId];
-      return newCart;
-    });
+    const remaining = availabilityMap[productId]?.remaining;
+    const current = cart[productId] || 0;
+    const next = Math.max(0, current + delta);
+
+    if (typeof remaining === 'number' && next > remaining) {
+      setNotification({
+        show: true,
+        message: `Only ${remaining} left for this item on your selected date(s).`,
+        type: 'warning',
+      });
+      setCartQuantity(productId, remaining);
+      return;
+    }
+
+    incrementCart(productId, delta);
   };
 
   const totalItems = Object.values(cart).reduce((a, b) => a + b, 0);
@@ -129,21 +194,7 @@ export default function BookingResultsPage() {
       return;
     }
 
-    // Pass cart and booking details to the info page
-    const cartParams = new URLSearchParams();
-    Object.entries(cart).forEach(([id, qty]) => {
-      cartParams.append(`item_${id}`, qty.toString());
-    });
-    // Pass forward search params
-    cartParams.append('type', searchType);
-    cartParams.append('check_in', checkInDate);
-    if (searchType === 'overnight' && checkOutDate) {
-      cartParams.append('check_out', checkOutDate);
-    }
-    cartParams.append('adults', searchAdults.toString());
-    cartParams.append('children', searchChildren.toString());
-
-    router.push(`/booking/info?${cartParams.toString()}`);
+    router.push('/booking/info');
   };
 
   return (
@@ -162,6 +213,9 @@ export default function BookingResultsPage() {
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center animate-fadeIn">
             <h1 className="section-title mb-3">Availability Results</h1>
+            <div className="max-w-2xl mx-auto mb-6">
+              <BookingStepper current="select" />
+            </div>
             <p className="section-subtitle mb-4">
               {checkInDate ? (
                 searchType === 'overnight' && checkOutDate 
@@ -256,6 +310,8 @@ export default function BookingResultsPage() {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredProducts.map((product) => {
                 const quantity = cart[product.id] || 0;
+                const remaining = availabilityMap[product.id]?.remaining;
+                const isAvailable = availabilityMap[product.id]?.is_available ?? true;
                 
                 return (
                   <article key={product.id} className={`card flex flex-col h-full transition-all duration-300 ${quantity > 0 ? 'ring-2 ring-primary shadow-lg' : ''}`}>
@@ -264,6 +320,14 @@ export default function BookingResultsPage() {
                         <span className="px-3 py-1 text-[10px] font-bold tracking-wider uppercase rounded-full bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-gray-300">
                           {product.category}
                         </span>
+                        {typeof remaining === 'number' && (
+                          <span className={`px-3 py-1 text-[10px] font-bold tracking-wider uppercase rounded-full ${
+                            isAvailable ? 'bg-primary/10 text-primary' : 'bg-red-100 text-red-700'
+                          }`}
+                          >
+                            {isAvailable ? `${remaining} left` : 'Sold out'}
+                          </span>
+                        )}
                         {quantity > 0 && (
                           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white text-xs font-bold">
                             {quantity}
@@ -307,9 +371,10 @@ export default function BookingResultsPage() {
                       {quantity === 0 ? (
                         <button
                           onClick={() => updateCart(product.id, 1)}
-                          className="btn-outline w-full py-2 text-sm"
+                          disabled={typeof remaining === 'number' ? remaining <= 0 : false}
+                          className="btn-outline w-full py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          Add to Booking
+                          {typeof remaining === 'number' && remaining <= 0 ? 'Not Available' : 'Add to Booking'}
                         </button>
                       ) : (
                         <div className="flex items-center justify-between bg-gray-50 dark:bg-slate-800 rounded-lg p-1">
@@ -322,7 +387,8 @@ export default function BookingResultsPage() {
                           <span className="font-bold text-accent dark:text-white">{quantity}</span>
                           <button
                             onClick={() => updateCart(product.id, 1)}
-                            className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-green-500 transition-colors"
+                            disabled={typeof remaining === 'number' ? quantity >= remaining : false}
+                            className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             +
                           </button>

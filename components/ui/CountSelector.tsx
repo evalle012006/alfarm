@@ -22,11 +22,13 @@ export default function CountSelector({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-gray-700 dark:text-white">{label}</span>
-        {helperText && (
-          <span className="text-xs text-gray-500 dark:text-white">{helperText}</span>
-        )}
+      <div className="mb-2">
+        <span className="text-sm font-medium text-gray-700 dark:text-white">
+          {label}
+          {helperText && (
+            <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">({helperText})</span>
+          )}
+        </span>
       </div>
       <div className="inline-flex items-center rounded-lg border-2 border-gray-200 dark:border-slate-700 overflow-hidden bg-white dark:bg-accent-dark">
         <button

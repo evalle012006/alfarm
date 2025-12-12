@@ -32,7 +32,7 @@ export default function BookingInfoPage() {
   const router = useRouter();
 
   const { user, isAuthenticated } = useAuth();
-  const { state: bookingState, setGuestInfo, setSpecialRequests } = useBooking();
+  const { state: bookingState, setGuestInfo, setSpecialRequests, setSearch } = useBooking();
 
   const bookingType = bookingState.bookingType;
   const checkInDate = bookingState.checkInDate;
@@ -67,6 +67,8 @@ export default function BookingInfoPage() {
   });
 
   const [specialRequestsLocal, setSpecialRequestsLocal] = useState('');
+  const [localCheckIn, setLocalCheckIn] = useState(checkInDate);
+  const [localCheckOut, setLocalCheckOut] = useState(checkOutDate);
 
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [profileAvailable, setProfileAvailable] = useState(false);
@@ -77,6 +79,52 @@ export default function BookingInfoPage() {
 
   const updateField = <K extends keyof GuestInfoForm>(field: K, value: GuestInfoForm[K]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleDateChange = (field: 'checkIn' | 'checkOut', value: string) => {
+    if (!value) {
+      if (field === 'checkIn') setLocalCheckIn('');
+      if (field === 'checkOut') setLocalCheckOut('');
+      return;
+    }
+
+    if (field === 'checkIn') {
+      setLocalCheckIn(value);
+
+      let nextOut = localCheckOut;
+      if (bookingType === 'overnight') {
+        if (!nextOut || new Date(nextOut) <= new Date(value)) {
+          nextOut = value;
+          setLocalCheckOut(nextOut);
+        }
+      }
+
+      setSearch({
+        bookingType,
+        checkInDate: value,
+        checkOutDate: bookingType === 'overnight' ? (nextOut || value) : undefined,
+        adults: form.adults,
+        children: form.children,
+      });
+    } else {
+      // checkOut
+      let normalizedOut = value;
+      if (bookingType === 'overnight' && (localCheckIn || checkInDate)) {
+        const baseIn = localCheckIn || checkInDate;
+        if (new Date(value) <= new Date(baseIn)) {
+          normalizedOut = baseIn;
+        }
+      }
+      setLocalCheckOut(normalizedOut);
+
+      setSearch({
+        bookingType,
+        checkInDate: localCheckIn || checkInDate,
+        checkOutDate: bookingType === 'overnight' ? normalizedOut : undefined,
+        adults: form.adults,
+        children: form.children,
+      });
+    }
   };
 
   const handleUseProfileChange = (checked: boolean) => {
@@ -235,22 +283,14 @@ export default function BookingInfoPage() {
               </div>
 
               {/* Guests */}
-              <div className="grid md:grid-cols-2 gap-6">
-                <CountSelector
-                  label="Adults *"
-                  value={form.adults}
-                  min={1}
-                  onChange={(value) => updateField('adults', value)}
-                  helperText="13 years old and above"
-                  error={errors.adults}
-                />
-                <CountSelector
-                  label="Children"
-                  value={form.children}
-                  min={0}
-                  onChange={(value) => updateField('children', value)}
-                  helperText="0 - 12 years old"
-                />
+              <div className="rounded-lg border border-slate-200 bg-white/80 px-4 py-3 text-sm text-gray-700 dark:border-slate-700 dark:bg-slate-900/60 dark:text-gray-200">
+                <p className="mb-1 font-medium">Guests</p>
+                <p>
+                  Headcount is managed in the <span className="font-semibold">Booking Summary</span> section below.
+                </p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  Current: {form.adults} Adults, {form.children} Children
+                </p>
               </div>
 
               {/* Notes */}
@@ -268,15 +308,92 @@ export default function BookingInfoPage() {
               </div>
 
               {/* Booking Summary */}
-              <div className="bg-primary/5 rounded-lg p-4 border border-primary/10">
-                <h3 className="font-semibold text-accent dark:text-white mb-2">Booking Summary</h3>
-                <div className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
-                  <p><strong>Type:</strong> {bookingType === 'overnight' ? 'Overnight Stay' : 'Day Use'}</p>
-                  <p><strong>Check-in:</strong> {checkInDate ? new Date(checkInDate).toLocaleDateString() : 'Not set'}</p>
-                  {bookingType === 'overnight' && checkOutDate && (
-                    <p><strong>Check-out:</strong> {new Date(checkOutDate).toLocaleDateString()}</p>
-                  )}
-                  <p><strong>Items:</strong> {cartItems.length} product(s) selected</p>
+              <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
+                <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                      Review your stay
+                    </p>
+                    <h3 className="text-lg font-semibold text-accent dark:text-white">
+                      Booking Summary
+                    </h3>
+                  </div>
+                  <span className="inline-flex items-center rounded-full border border-sky-500/40 bg-sky-500/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-sky-700 dark:border-sky-400/40 dark:bg-sky-500/15 dark:text-sky-200">
+                    {bookingType === 'overnight' ? 'Overnight Stay' : 'Day Use'}
+                  </span>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  {/* Dates & items */}
+                  <div className="space-y-3 text-sm text-gray-700 dark:text-gray-300">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                        Dates
+                      </p>
+                      <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        <div>
+                          <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">
+                            Check-in
+                          </label>
+                          <input
+                            type="date"
+                            value={localCheckIn}
+                            onChange={(e) => handleDateChange('checkIn', e.target.value)}
+                            className="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-800 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                          />
+                        </div>
+                        {bookingType === 'overnight' && (
+                          <div>
+                            <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">
+                              Check-out
+                            </label>
+                            <input
+                              type="date"
+                              value={localCheckOut}
+                              onChange={(e) => handleDateChange('checkOut', e.target.value)}
+                              className="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-800 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                        Selection
+                      </p>
+                      <p className="mt-1">
+                        {cartItems.length} product{cartItems.length === 1 ? '' : 's'} selected
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Editable headcount */}
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                      Headcount
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <CountSelector
+                        label="Adults*"
+                        value={form.adults}
+                        min={1}
+                        onChange={(value) => updateField('adults', value)}
+                        helperText="13+ yrs"
+                        error={errors.adults}
+                      />
+                      <CountSelector
+                        label="Children"
+                        value={form.children}
+                        min={0}
+                        onChange={(value) => updateField('children', value)}
+                        helperText="0 - 12 yrs"
+                      />
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Adjust adults and children here. We&apos;ll use this for your booking records and fees.
+                    </p>
+                  </div>
                 </div>
               </div>
 

@@ -2,14 +2,23 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import logo from '../images/alfarm_logo.jpg';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function Navigation() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, isAuthenticated, logout } = useAuth();
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    setShowUserMenu(false);
+    router.push('/');
+  };
 
   const isActive = (href: string) => {
     if (href === '/') {
@@ -57,7 +66,7 @@ export default function Navigation() {
           <Link href="/" className="flex items-center space-x-3">
             <div className="w-16 h-16 relative rounded-full overflow-hidden">
               <Image
-                src={logo}
+                src="/logo.png"
                 alt="AlFarm Resort Logo"
                 fill
                 className="object-cover"
@@ -145,9 +154,48 @@ export default function Navigation() {
                 {theme === 'dark' ? '🌙' : '☀️'}
               </span>
             </button>
-            <Link href="/guest/login" className="btn-primary text-sm">
-              Book Now
-            </Link>
+            
+            {isAuthenticated && user ? (
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors"
+                >
+                  <span className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold">
+                    {user.firstName.charAt(0)}{user.lastName.charAt(0)}
+                  </span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-white hidden lg:block">
+                    {user.firstName}
+                  </span>
+                </button>
+                
+                {showUserMenu && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-50 dark:bg-slate-800 dark:border-slate-700">
+                    <div className="px-4 py-2 border-b border-gray-100 dark:border-slate-700">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">{user.firstName} {user.lastName}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
+                    </div>
+                    <Link
+                      href={user.role === 'guest' ? '/guest/dashboard' : '/admin/dashboard'}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-white dark:hover:bg-slate-700"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      Dashboard
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link href="/guest/login" className="btn-primary text-sm">
+                Book Now
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -223,13 +271,37 @@ export default function Navigation() {
               >
                 Contact
               </Link>
-              <Link
-                href="/guest/login"
-                className="btn-primary text-center"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Book Now
-              </Link>
+              {isAuthenticated && user ? (
+                <>
+                  <div className="pt-2 border-t border-gray-200 dark:border-slate-700">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                      {user.firstName} {user.lastName}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
+                  </div>
+                  <Link
+                    href={user.role === 'guest' ? '/guest/dashboard' : '/admin/dashboard'}
+                    className="font-medium text-primary"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Dashboard
+                  </Link>
+                  <button
+                    onClick={() => { handleLogout(); setIsMenuOpen(false); }}
+                    className="font-medium text-red-600 text-left"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <Link
+                  href="/guest/login"
+                  className="btn-primary text-center"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Book Now
+                </Link>
+              )}
               <button
                 type="button"
                 onClick={toggleTheme}

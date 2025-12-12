@@ -14,7 +14,8 @@ import Notification, { NotificationType } from '@/components/ui/Notification';
 export default function Home() {
   const router = useRouter();
   const [bookingType, setBookingType] = useState('Day-use');
-  const [date, setDate] = useState('');
+  const [checkInDate, setCheckInDate] = useState('');
+  const [checkOutDate, setCheckOutDate] = useState('');
   const [adults, setAdults] = useState(2);
   const [children, setChildren] = useState(0);
   const [showGuestMenu, setShowGuestMenu] = useState(false);
@@ -48,7 +49,7 @@ export default function Home() {
   }, []);
 
   const handleSearch = () => {
-    if (!date) {
+    if (!checkInDate) {
       setNotification({
         show: true,
         message: 'Please select a date for your visit.',
@@ -56,13 +57,37 @@ export default function Home() {
       });
       return;
     }
+
+    // For overnight, require check-out date
+    if (bookingType === 'Overnight' && !checkOutDate) {
+      setNotification({
+        show: true,
+        message: 'Please select a check-out date for overnight stays.',
+        type: 'error'
+      });
+      return;
+    }
+
+    // Validate check-out is after check-in
+    if (bookingType === 'Overnight' && checkOutDate && checkOutDate <= checkInDate) {
+      setNotification({
+        show: true,
+        message: 'Check-out date must be after check-in date.',
+        type: 'error'
+      });
+      return;
+    }
     
     const params = new URLSearchParams({
-      type: bookingType === 'Day-use' ? 'day-use' : 'overnight',
-      date,
+      type: bookingType === 'Day-use' ? 'day' : 'overnight',
+      check_in: checkInDate,
       adults: adults.toString(),
       children: children.toString(),
     });
+
+    if (bookingType === 'Overnight' && checkOutDate) {
+      params.append('check_out', checkOutDate);
+    }
 
     router.push(`/booking/results?${params.toString()}`);
   };
@@ -133,19 +158,44 @@ export default function Home() {
                   className="mb-6"
                 />
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                <div className={`grid grid-cols-1 ${bookingType === 'Overnight' ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-4 mb-6`}>
                   <div>
-                    <label className="text-xs font-semibold text-gray-500 dark:text-white">Date</label>
+                    <label className="text-xs font-semibold text-gray-500 dark:text-white">
+                      {bookingType === 'Overnight' ? 'Check-in' : 'Date'}
+                    </label>
                     <div className="mt-1">
                       <input
                         type="date"
                         min={new Date().toISOString().split('T')[0]}
-                        value={date}
-                        onChange={(e) => setDate(e.target.value)}
+                        value={checkInDate}
+                        onChange={(e) => {
+                          setCheckInDate(e.target.value);
+                          // Auto-set check-out to next day if not set or invalid
+                          if (bookingType === 'Overnight' && (!checkOutDate || checkOutDate <= e.target.value)) {
+                            const nextDay = new Date(e.target.value);
+                            nextDay.setDate(nextDay.getDate() + 1);
+                            setCheckOutDate(nextDay.toISOString().split('T')[0]);
+                          }
+                        }}
                         className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                       />
                     </div>
                   </div>
+
+                  {bookingType === 'Overnight' && (
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 dark:text-white">Check-out</label>
+                      <div className="mt-1">
+                        <input
+                          type="date"
+                          min={checkInDate ? new Date(new Date(checkInDate).getTime() + 86400000).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}
+                          value={checkOutDate}
+                          onChange={(e) => setCheckOutDate(e.target.value)}
+                          className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+                  )}
                   
                   <div className="relative" ref={guestMenuRef}>
                     <label className="text-xs font-semibold text-gray-500 dark:text-white">Guests</label>
@@ -195,7 +245,7 @@ export default function Home() {
                 </div>
 
                 {/* Live Estimate Display */}
-                {date && (
+                {checkInDate && (
                   <div className="mb-4 p-3 bg-primary/5 rounded-lg border border-primary/10 flex justify-between items-center">
                     <span className="text-xs font-medium text-gray-600 dark:text-gray-300">Estimated Entrance Fees:</span>
                     <span className="text-sm font-bold text-primary">₱{estimatedEntranceFee}</span>
@@ -210,6 +260,11 @@ export default function Home() {
                 </button>
 
                 <p className="mt-3 text-[11px] text-center text-gray-400 dark:text-white">
+                  {bookingType === 'Overnight' && checkInDate && checkOutDate && (
+                    <span className="block text-primary font-medium mb-1">
+                      {Math.ceil((new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) / (1000 * 60 * 60 * 24))} night(s) stay
+                    </span>
+                  )}
                   Choose your dates and guest count to see available offers.
                 </p>
               </div>

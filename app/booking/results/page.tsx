@@ -22,10 +22,16 @@ export default function BookingResultsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   
-  const searchType = searchParams.get('type') || 'day-use';
-  const searchDate = searchParams.get('date') || '';
+  const searchType = searchParams.get('type') || 'day';
+  const checkInDate = searchParams.get('check_in') || searchParams.get('date') || '';
+  const checkOutDate = searchParams.get('check_out') || '';
   const searchAdults = parseInt(searchParams.get('adults') || '2');
   const searchChildren = parseInt(searchParams.get('children') || '0');
+
+  // Calculate number of nights for overnight stays
+  const numNights = searchType === 'overnight' && checkInDate && checkOutDate
+    ? Math.ceil((new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) / (1000 * 60 * 60 * 24))
+    : 1;
 
   const [products, setProducts] = useState<ProductOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,9 +77,8 @@ export default function BookingResultsPage() {
     }
 
     // 3. Filter by initial search type (Day-use vs Overnight)
-    // If searching for overnight, hide strict day-use items (unless they are flexible)
-    if (searchType === 'overnight' && product.category.includes('Entrance')) return false; 
-    // Note: Logic can be refined. For now, we trust the user to pick valid items or use 'all' to see everything.
+    // For overnight: prioritize per_night items, hide day-only items
+    // For day-use: prioritize day items, hide night-only items
     
     return true;
   });
@@ -95,13 +100,20 @@ export default function BookingResultsPage() {
     DAY: { ADULT: 60, CHILD: 30 },
     NIGHT: { ADULT: 70, CHILD: 35 }
   };
-  const currentFees = searchType === 'day-use' ? FEES.DAY : FEES.NIGHT;
+  const currentFees = searchType === 'day' ? FEES.DAY : FEES.NIGHT;
   const totalEntranceFees = (searchAdults * currentFees.ADULT) + (searchChildren * currentFees.CHILD);
 
   // Total Cost = Product Costs + Entrance Fees
+  // For overnight stays, multiply per_night items by number of nights
   const productCost = Object.entries(cart).reduce((sum, [id, qty]) => {
     const product = products.find(p => p.id === parseInt(id));
-    return sum + (product ? product.pricePerNight * qty : 0);
+    if (!product) return sum;
+    
+    // Check if this is a per_night item (rooms) for overnight bookings
+    const isPerNight = product.type === 'room' && searchType === 'overnight';
+    const multiplier = isPerNight ? numNights : 1;
+    
+    return sum + (product.pricePerNight * qty * multiplier);
   }, 0);
   
   const totalCost = productCost + totalEntranceFees;
@@ -117,14 +129,17 @@ export default function BookingResultsPage() {
       return;
     }
 
-    // In a real app, we'd pass the cart to the next step via context, state, or query params
-    // For now, we just navigate to the info page with a generic param
+    // Pass cart and booking details to the info page
     const cartParams = new URLSearchParams();
     Object.entries(cart).forEach(([id, qty]) => {
       cartParams.append(`item_${id}`, qty.toString());
     });
-    // Pass forward search params too
-    cartParams.append('date', searchDate);
+    // Pass forward search params
+    cartParams.append('type', searchType);
+    cartParams.append('check_in', checkInDate);
+    if (searchType === 'overnight' && checkOutDate) {
+      cartParams.append('check_out', checkOutDate);
+    }
     cartParams.append('adults', searchAdults.toString());
     cartParams.append('children', searchChildren.toString());
 
@@ -148,12 +163,16 @@ export default function BookingResultsPage() {
           <div className="max-w-3xl mx-auto text-center animate-fadeIn">
             <h1 className="section-title mb-3">Availability Results</h1>
             <p className="section-subtitle mb-4">
-              {searchDate ? `Showing options for ${new Date(searchDate).toLocaleDateString()}` : 'Select your preferred accommodations'}
+              {checkInDate ? (
+                searchType === 'overnight' && checkOutDate 
+                  ? `${new Date(checkInDate).toLocaleDateString()} - ${new Date(checkOutDate).toLocaleDateString()} (${numNights} night${numNights > 1 ? 's' : ''})`
+                  : `Showing options for ${new Date(checkInDate).toLocaleDateString()}`
+              ) : 'Select your preferred accommodations'}
             </p>
             <div className="inline-flex items-center gap-4 bg-white/20 backdrop-blur-md px-6 py-2 rounded-full text-sm text-gray-800 dark:text-white border border-white/30">
-              <span>📅 {searchDate || 'No date selected'}</span>
+              <span>📅 {checkInDate || 'No date selected'}{searchType === 'overnight' && checkOutDate ? ` → ${checkOutDate}` : ''}</span>
               <span>👥 {searchAdults} Adults, {searchChildren} Kids</span>
-              <span className="capitalize">🌙 {searchType}</span>
+              <span className="capitalize">🌙 {searchType === 'day' ? 'Day-use' : 'Overnight'}</span>
             </div>
           </div>
         </div>
@@ -261,6 +280,11 @@ export default function BookingResultsPage() {
                         <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-1 uppercase">
                           / {product.type === 'day-use' ? 'day' : 'night'}
                         </span>
+                        {product.type === 'room' && searchType === 'overnight' && numNights > 1 && (
+                          <span className="block text-sm font-normal text-gray-500 dark:text-gray-400 mt-1">
+                            ₱{(product.pricePerNight * numNights).toLocaleString()} for {numNights} nights
+                          </span>
+                        )}
                       </p>
 
                       <div className="flex flex-wrap gap-2 mb-4">

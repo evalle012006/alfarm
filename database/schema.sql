@@ -46,8 +46,10 @@ CREATE TABLE IF NOT EXISTS bookings (
     guest_last_name VARCHAR(100) NOT NULL,
     guest_email VARCHAR(255) NOT NULL,
     guest_phone VARCHAR(20) NOT NULL,
-    booking_date DATE NOT NULL,
+    booking_date DATE NOT NULL, -- Primary date (for day-use) or check-in date (for overnight)
+    check_out_date DATE, -- NULL for day-use, set for overnight stays
     booking_time TIME, -- For day tours
+    booking_type VARCHAR(20) DEFAULT 'day' CHECK (booking_type IN ('day', 'overnight')),
     status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'checked_in', 'completed', 'cancelled')),
     payment_status VARCHAR(20) DEFAULT 'unpaid' CHECK (payment_status IN ('unpaid', 'partial', 'paid', 'refunded')),
     total_amount DECIMAL(10, 2) NOT NULL,
@@ -73,7 +75,9 @@ CREATE TABLE IF NOT EXISTS booking_items (
 -- Indexes
 CREATE INDEX idx_products_category ON products(category_id);
 CREATE INDEX idx_bookings_date ON bookings(booking_date);
+CREATE INDEX idx_bookings_checkout ON bookings(check_out_date);
 CREATE INDEX idx_bookings_email ON bookings(guest_email);
+CREATE INDEX idx_bookings_type ON bookings(booking_type);
 
 -- Seed Data: Categories
 INSERT INTO categories (name, description) VALUES

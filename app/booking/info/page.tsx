@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
@@ -31,17 +32,48 @@ interface StoredUserProfile {
   phone?: string;
 }
 
+interface CartItem {
+  product_id: number;
+  quantity: number;
+}
+
 export default function BookingInfoPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Extract booking details from URL params
+  const bookingType = searchParams.get('type') || 'day';
+  const checkInDate = searchParams.get('check_in') || '';
+  const checkOutDate = searchParams.get('check_out') || '';
+  const urlAdults = parseInt(searchParams.get('adults') || '2');
+  const urlChildren = parseInt(searchParams.get('children') || '0');
+
+  // Extract cart items from URL params
+  const cartItems: CartItem[] = [];
+  searchParams.forEach((value, key) => {
+    if (key.startsWith('item_')) {
+      const productId = parseInt(key.replace('item_', ''));
+      const quantity = parseInt(value);
+      if (productId && quantity > 0) {
+        cartItems.push({ product_id: productId, quantity });
+      }
+    }
+  });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [form, setForm] = useState<GuestInfoForm>({
     firstName: '',
     middleName: '',
     lastName: '',
     email: '',
     phone: '',
-    adults: 2,
-    children: 0,
+    adults: urlAdults,
+    children: urlChildren,
     useProfile: false,
   });
+
+  const [specialRequests, setSpecialRequests] = useState('');
 
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [profile, setProfile] = useState<StoredUserProfile | null>(null);
@@ -102,13 +134,51 @@ export default function BookingInfoPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
-    // Placeholder: replace with actual booking submission later
-    console.log('Guest info submitted', form);
-    alert('Guest information captured. Booking flow continues next.');
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const bookingPayload = {
+        guest_info: {
+          first_name: form.firstName,
+          last_name: form.lastName,
+          email: form.email,
+          phone: form.phone,
+        },
+        booking_date: checkInDate,
+        check_out_date: bookingType === 'overnight' ? checkOutDate : null,
+        booking_type: bookingType,
+        items: cartItems,
+        special_requests: specialRequests || null,
+      };
+
+      const response = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bookingPayload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create booking');
+      }
+
+      // Success - redirect to confirmation or guest dashboard
+      // For now, show success and redirect to home
+      alert(`Booking created successfully! Booking ID: ${data.booking_id}\nTotal: ₱${data.total_amount.toLocaleString()}`);
+      router.push('/');
+
+    } catch (error) {
+      console.error('Booking submission error:', error);
+      setSubmitError(error instanceof Error ? error.message : 'Failed to create booking');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -221,10 +291,32 @@ export default function BookingInfoPage() {
                 </label>
                 <textarea
                   rows={4}
+                  value={specialRequests}
+                  onChange={(e) => setSpecialRequests(e.target.value)}
                   className="input-field bg-white text-black"
                   placeholder="Allergies, late check-in, celebration notes, etc."
                 ></textarea>
               </div>
+
+              {/* Booking Summary */}
+              <div className="bg-primary/5 rounded-lg p-4 border border-primary/10">
+                <h3 className="font-semibold text-accent dark:text-white mb-2">Booking Summary</h3>
+                <div className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
+                  <p><strong>Type:</strong> {bookingType === 'overnight' ? 'Overnight Stay' : 'Day Use'}</p>
+                  <p><strong>Check-in:</strong> {checkInDate ? new Date(checkInDate).toLocaleDateString() : 'Not set'}</p>
+                  {bookingType === 'overnight' && checkOutDate && (
+                    <p><strong>Check-out:</strong> {new Date(checkOutDate).toLocaleDateString()}</p>
+                  )}
+                  <p><strong>Items:</strong> {cartItems.length} product(s) selected</p>
+                </div>
+              </div>
+
+              {/* Error Display */}
+              {submitError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                  {submitError}
+                </div>
+              )}
 
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-4 border-t border-gray-200 dark:border-slate-700">
                 <p className="text-xs text-gray-500 dark:text-white max-w-md">
@@ -238,8 +330,12 @@ export default function BookingInfoPage() {
                   >
                     Back
                   </Link>
-                  <PrimaryButton type="submit" className="w-full sm:w-auto text-center">
-                    Continue to Review
+                  <PrimaryButton 
+                    type="submit" 
+                    className="w-full sm:w-auto text-center"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Submitting...' : 'Confirm Booking'}
                   </PrimaryButton>
                 </div>
               </div>

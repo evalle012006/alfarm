@@ -4,54 +4,27 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useAuth } from '@/lib/AuthContext';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const { user, logout } = useAuth();
   const [stats, setStats] = useState({
     totalBookings: 0,
-    totalRooms: 7, // From our schema
+    totalRooms: 7,
     availableRooms: 7,
     pendingBookings: 0,
     totalGuests: 0,
   });
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-
-    if (!token || !userData) {
-      router.push('/admin/login');
-      return;
-    }
-
-    const parsedUser = JSON.parse(userData);
-    if (parsedUser.role !== 'root' && parsedUser.role !== 'admin') {
-      router.push('/');
-      return;
-    }
-
-    setUser(parsedUser);
-  }, [router]);
-
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    logout();
     router.push('/');
   };
 
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-slate-950">
-        <div className="text-center">
-          <div className="text-5xl mb-4">⏳</div>
-          <p className="text-gray-600 dark:text-white">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
+    <ProtectedRoute allowedRoles={['admin', 'root']} redirectTo="/admin/login">
     <div className="min-h-screen bg-gray-100 dark:bg-slate-950 dark:text-white">
       {/* Header */}
       <header className="bg-accent text-white shadow-lg">
@@ -73,8 +46,8 @@ export default function AdminDashboard() {
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right hidden md:block">
-                <p className="font-semibold">{user.firstName} {user.lastName}</p>
-                <p className="text-sm text-gray-300 capitalize">{user.role}</p>
+                <p className="font-semibold">{user?.firstName} {user?.lastName}</p>
+                <p className="text-sm text-gray-300 capitalize">{user?.role}</p>
               </div>
               <button
                 onClick={handleLogout}
@@ -90,7 +63,7 @@ export default function AdminDashboard() {
       <div className="container mx-auto px-4 py-8">
         {/* Welcome Message */}
         <div className="bg-gradient-to-r from-primary to-secondary text-white rounded-xl p-8 mb-8">
-          <h2 className="text-3xl font-bold mb-2">Welcome back, {user.firstName}!</h2>
+          <h2 className="text-3xl font-bold mb-2">Welcome back, {user?.firstName}!</h2>
           <p className="text-white/90">Here's your resort overview for today</p>
         </div>
 
@@ -220,5 +193,6 @@ export default function AdminDashboard() {
         </div>
       </div>
     </div>
+    </ProtectedRoute>
   );
 }

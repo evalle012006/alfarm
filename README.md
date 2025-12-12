@@ -17,22 +17,27 @@ A full-stack resort management system with a beautiful public website built with
 - ✅ Mobile-responsive navigation
 
 ### Guest Features
-- ✅ User registration and authentication
+- ✅ User registration and authentication (JWT-based)
+- ✅ Shadow account claiming (link bookings made as guest)
 - ✅ Personal dashboard
 - ✅ Browse available rooms and pricing
 - ✅ Check availability with real-time filtering (Day-use/Overnight)
 - ✅ Cart system with live price estimation
-- 🚧 Complete checkout process (UI ready, final submission to be wired)
-- 🚧 View booking history (UI ready, backend API to be implemented)
+- ✅ Complete checkout process with date-range support
+- ✅ View booking history API
 - 🚧 Manage profile (to be implemented)
 
 ### Admin Features
-- ✅ Secure admin login
-- ✅ Admin dashboard with statistics
-- 🚧 Manage bookings (UI ready, backend API to be implemented)
+- ✅ Secure admin login (role-based: admin/root)
+- ✅ Admin dashboard with statistics (protected routes)
+- ✅ Manage bookings API (CRUD operations)
 - 🚧 Manage rooms (UI ready, backend API to be implemented)
 - 🚧 Manage amenities (UI ready, backend API to be implemented)
 - 🚧 View guest information (UI ready, backend API to be implemented)
+
+### Email Notifications
+- ✅ Booking confirmation emails (Mailtrap/SMTP)
+- ✅ Booking status update emails
 
 ## 🛠️ Tech Stack
 
@@ -41,6 +46,7 @@ A full-stack resort management system with a beautiful public website built with
 - **Backend**: Next.js API Routes
 - **Database**: PostgreSQL (Hosted on Aiven)
 - **Authentication**: JWT with bcryptjs
+- **Email**: Nodemailer with Mailtrap (SMTP)
 - **Icons**: React Icons
 
 ## 📋 Prerequisites
@@ -127,6 +133,13 @@ DB_NAME=alfarm_resort
 # JWT Secret (Change this in production!)
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 
+# Email Configuration (Mailtrap for testing)
+SMTP_HOST=sandbox.smtp.mailtrap.io
+SMTP_PORT=2525
+SMTP_USER=your_mailtrap_username
+SMTP_PASS=your_mailtrap_password
+SMTP_FROM=noreply@alfarm.com
+
 # Application
 NEXT_PUBLIC_APP_NAME=AlFarm Resort and Adventure Park
 NEXT_PUBLIC_APP_URL=http://localhost:3000
@@ -170,18 +183,25 @@ alfarm/
 │   │   ├── login/              # Guest login
 │   │   ├── register/           # Guest registration
 │   │   └── dashboard/          # Guest dashboard
+│   ├── booking/                 # Booking flow
+│   │   ├── info/               # Guest info collection
+│   │   └── results/            # Booking confirmation
 │   ├── api/                     # API routes
 │   │   └── auth/               # Authentication endpoints
 │   ├── globals.css             # Global styles
 │   └── layout.tsx              # Root layout
 ├── components/
+│   ├── ui/                     # UI components
 │   ├── Navigation.tsx          # Main navigation
 │   └── Footer.tsx              # Footer component
 ├── database/
 │   └── schema.sql              # PostgreSQL schema
 ├── lib/
 │   ├── db.ts                   # Database connection
-│   └── auth.ts                 # Authentication utilities
+│   ├── auth.ts                 # Authentication utilities
+│   ├── AuthContext.tsx         # React auth context provider
+│   ├── authMiddleware.ts       # API route auth middleware
+│   └── email.ts                # Email service (Nodemailer)
 ├── public/
 │   └── logo.png                # AlFarm logo
 ├── scripts/
@@ -210,30 +230,38 @@ The website uses AlFarm's brand colors:
 ## 📝 API Endpoints
 
 ### Authentication
-- `POST /api/auth/login` - User login
-- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login (returns JWT)
+- `POST /api/auth/register` - User registration (supports shadow account claiming)
+- `GET /api/auth/me` - Get current user from token
 
 ### Products & Inventory
 - `GET /api/products` - Get all products (filter by category/date)
-- `GET /api/availability` - Check availability for specific dates
+- `GET /api/availability` - Check availability for specific dates (supports date ranges)
 
-### Bookings
-- `GET /api/bookings` - Get booking history
-- `POST /api/bookings` - Create new reservation
-- `GET /api/bookings/[id]` - Get booking details
+### Guest Bookings
+- `GET /api/bookings/history` - Get authenticated user's booking history
+- `POST /api/bookings` - Create new reservation (with validation & email)
+
+### Admin Bookings (Protected - requires admin/root role)
+- `GET /api/admin/bookings` - List all bookings with filters
+- `POST /api/admin/bookings` - Create booking on behalf of guest
+- `GET /api/admin/bookings/[id]` - Get single booking details
+- `PATCH /api/admin/bookings/[id]` - Update booking status/payment
+- `DELETE /api/admin/bookings/[id]` - Cancel booking
 
 
 ## 🚧 Features to Implement
 
-- [ ] Complete booking checkout (guest details & submission)
-- [ ] Payment integration
-- [ ] Email notifications
+- [x] ~~Complete booking checkout (guest details & submission)~~
+- [x] ~~Email notifications~~
+- [ ] Payment integration (GCash, PayMaya, etc.)
 - [ ] Image upload for rooms and gallery
 - [ ] Reviews and ratings
 - [ ] Search and filter functionality (Expanded)
 - [ ] Admin reports and analytics
-- [ ] Guest booking management
+- [ ] Guest profile management
 - [ ] Multi-language support
+- [ ] QR code for booking check-in
 
 ## 🐛 Troubleshooting
 

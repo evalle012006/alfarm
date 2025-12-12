@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import logo from '../images/alfarm_logo.jpg';
+import logo from '../public/logo.png';
 
 export default function Footer() {
   return (

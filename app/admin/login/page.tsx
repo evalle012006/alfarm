@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function AdminLogin() {
   const router = useRouter();
+  const { login, isAuthenticated, user, isLoading } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -14,32 +16,32 @@ export default function AdminLogin() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Redirect if already authenticated as admin/root
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && user && (user.role === 'admin' || user.role === 'root')) {
+      router.push('/admin/dashboard');
+    }
+  }, [isAuthenticated, isLoading, user, router]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, role: 'root' }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        router.push('/admin/dashboard');
-      } else {
-        setError(data.error || 'Login failed');
-      }
-    } catch (err) {
-      setError('An error occurred. Please try again.');
-    } finally {
-      setLoading(false);
+    // Try root first, then admin
+    let result = await login(formData.email, formData.password, 'root');
+    
+    if (!result.success) {
+      result = await login(formData.email, formData.password, 'admin');
     }
+
+    if (result.success) {
+      router.push('/admin/dashboard');
+    } else {
+      setError(result.error || 'Login failed');
+    }
+    
+    setLoading(false);
   };
 
   return (

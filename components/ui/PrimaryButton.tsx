@@ -7,6 +7,7 @@ interface PrimaryButtonProps {
   className?: string;
   type?: 'button' | 'submit';
   onClick?: () => void;
+  disabled?: boolean;
 }
 
 export default function PrimaryButton({
@@ -15,8 +16,9 @@ export default function PrimaryButton({
   className = '',
   type = 'button',
   onClick,
+  disabled = false,
 }: PrimaryButtonProps) {
-  const baseClass = `btn-primary ${className}`;
+  const baseClass = `btn-primary ${className} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`;
 
   if (href) {
     return (
@@ -27,7 +29,7 @@ export default function PrimaryButton({
   }
 
   return (
-    <button type={type} className={baseClass} onClick={onClick}>
+    <button type={type} className={baseClass} onClick={onClick} disabled={disabled}>
       {children}
     </button>
   );

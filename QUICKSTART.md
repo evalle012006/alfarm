@@ -73,10 +73,19 @@ DB_NAME=alfarm_resort
 # JWT Secret (Change this in production!)
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 
+# Email Configuration (Mailtrap for testing)
+SMTP_HOST=sandbox.smtp.mailtrap.io
+SMTP_PORT=2525
+SMTP_USER=your_mailtrap_username
+SMTP_PASS=your_mailtrap_password
+SMTP_FROM=noreply@alfarm.com
+
 # Application
 NEXT_PUBLIC_APP_NAME=AlFarm Resort and Adventure Park
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
+
+**Note:** Get Mailtrap credentials from [mailtrap.io](https://mailtrap.io) → Email Testing → SMTP Settings
 
 ### 6️⃣ Start the Application (1 minute)
 
@@ -103,9 +112,11 @@ Open your browser:
 
 The application is now running with:
 - ✅ Beautiful public website
-- ✅ Working admin login
-- ✅ Guest registration system
+- ✅ Working admin login (role-based protection)
+- ✅ Guest registration with shadow account claiming
 - ✅ PostgreSQL database connected
+- ✅ Booking system with date-range support
+- ✅ Email notifications (if Mailtrap configured)
 
 ## 🎯 What to Do Next
 
@@ -114,16 +125,23 @@ The application is now running with:
    - Check activities at `/activities`
    - View gallery at `/gallery`
 
-2. **Test Admin Features**
-   - Login as admin
-   - View dashboard
-   - Check statistics
+2. **Test the Booking Flow**
+   - Select Day Use or Overnight on homepage
+   - Pick dates and search availability
+   - Add items to cart and checkout
+   - Check your email (Mailtrap inbox)
 
-3. **Create a Guest Account**
+3. **Test Admin Features**
+   - Login as admin at `/admin/login`
+   - View protected dashboard
+   - Manage bookings via API
+
+4. **Create a Guest Account**
    - Register at `/guest/register`
-   - Login and view dashboard
+   - If you booked as guest before, your account will be linked!
+   - View booking history
 
-4. **Customize**
+5. **Customize**
    - Change colors in `tailwind.config.js`
    - Update content in page files
    - Add your own images

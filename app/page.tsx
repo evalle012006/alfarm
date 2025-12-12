@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import SectionHeader from '@/components/ui/SectionHeader';
@@ -22,12 +23,15 @@ export default function Home() {
   const [children, setChildren] = useState(0);
   const [showGuestMenu, setShowGuestMenu] = useState(false);
   const guestMenuRef = useRef<HTMLDivElement>(null);
-  
+
   const [notification, setNotification] = useState<{
     show: boolean;
     message: string;
     type: NotificationType;
   }>({ show: false, message: '', type: 'error' });
+
+  // Modal state for feature cards
+  const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
 
   // Constants for Entrance Fees (Should match DB/Offers)
   const FEES = {
@@ -89,7 +93,7 @@ export default function Home() {
       adults,
       children,
     });
-    
+
     const params = new URLSearchParams({
       type: normalizedType,
       check_in: checkInDate,
@@ -104,17 +108,65 @@ export default function Home() {
     router.push(`/booking/results?${params.toString()}`);
   };
 
+  const features = [
+    {
+      id: 'adventure',
+      icon: '🏔️',
+      title: 'Adventure Activities',
+      description: 'Zip-lining, hiking trails, rock climbing, and more thrilling adventures across our expansive park.',
+      color: 'primary',
+      images: [
+        '/images/features/adventure/adventure-1.jpg',
+        '/images/features/adventure/adventure-2.jpg',
+        '/images/features/adventure/adventure-3.jpg',
+        '/images/features/adventure/adventure-4.jpg',
+        '/images/features/adventure/adventure-5.jpg',
+        '/images/features/adventure/adventure-6.jpg'
+      ]
+    },
+    {
+      id: 'nature',
+      icon: '🌳',
+      title: 'Nature Immersion',
+      description: 'Surrounded by lush forests and cool air, reconnect with nature and find your calm.',
+      color: 'secondary',
+      images: [
+        '/images/features/nature/nature-1.jpg',
+        '/images/features/nature/nature-2.jpg',
+        '/images/features/nature/nature-3.jpg',
+        '/images/features/nature/nature-4.jpg',
+        '/images/features/nature/nature-5.jpg',
+        '/images/features/nature/nature-6.jpg'
+      ]
+    },
+    {
+      id: 'luxury',
+      icon: '🏨',
+      title: 'Luxury Comfort',
+      description: 'From cozy cabins to private villas, enjoy modern amenities and thoughtful service.',
+      color: 'accent',
+      images: [
+        '/images/features/luxury/luxury-1.jpg',
+        '/images/features/luxury/luxury-2.jpg',
+        '/images/features/luxury/luxury-3.jpg',
+        '/images/features/luxury/luxury-4.jpg',
+        '/images/features/luxury/luxury-5.jpg',
+        '/images/features/luxury/luxury-6.jpg'
+      ]
+    }
+  ];
+
   return (
     <>
       <Navigation />
-      
+
       <Notification
         isVisible={notification.show}
         message={notification.message}
         type={notification.type}
         onClose={() => setNotification(prev => ({ ...prev, show: false }))}
       />
-      
+
       {/* Hero Section */}
       <section className="relative hero-gradient">
         <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-primary/10 via-white to-secondary/10 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900"></div>
@@ -162,7 +214,7 @@ export default function Home() {
                   </span>
                 </div>
 
-                 {/* Booking Widget */}
+                {/* Booking Widget */}
                 <TagToggle
                   options={['Day-use', 'Overnight']}
                   active={bookingType}
@@ -208,7 +260,7 @@ export default function Home() {
                       </div>
                     </div>
                   )}
-                  
+
                   <div className="relative" ref={guestMenuRef}>
                     <label className="text-xs font-semibold text-gray-500 dark:text-white">Guests</label>
                     <button
@@ -243,7 +295,7 @@ export default function Home() {
                               <span>Entrance Fees:</span>
                               <span className="text-primary">₱{estimatedEntranceFee}</span>
                             </div>
-                            <button 
+                            <button
                               onClick={() => setShowGuestMenu(false)}
                               className="text-xs text-white bg-primary hover:bg-primary-600 w-full py-2 rounded-lg transition-colors"
                             >
@@ -307,41 +359,95 @@ export default function Home() {
           />
 
           <div className="grid md:grid-cols-3 gap-8">
-            {/* Feature 1 */}
-            <div className="card text-center border border-gray-100 hover:border-primary/30 dark:border-slate-700 dark:hover:border-primary/50">
-              <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center text-3xl">
-                <span>🏔️</span>
-              </div>
-              <h3 className="text-2xl font-bold text-accent mb-2 dark:text-white">Adventure Activities</h3>
-              <p className="text-sm text-gray-600 dark:text-white">
-                Zip-lining, hiking trails, rock climbing, and more thrilling adventures across our expansive park.
-              </p>
-            </div>
-
-            {/* Feature 2 */}
-            <div className="card text-center border border-gray-100 hover:border-secondary/30 dark:border-slate-700 dark:hover:border-secondary/50">
-              <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-secondary/10 flex items-center justify-center text-3xl">
-                <span>🌳</span>
-              </div>
-              <h3 className="text-2xl font-bold text-accent mb-2 dark:text-white">Nature Immersion</h3>
-              <p className="text-sm text-gray-600 dark:text-white">
-                Surrounded by lush forests and cool air, reconnect with nature and find your calm.
-              </p>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="card text-center border border-gray-100 hover:border-primary/30 dark:border-slate-700 dark:hover:border-primary/50">
-              <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-accent/10 flex items-center justify-center text-3xl">
-                <span>🏨</span>
-              </div>
-              <h3 className="text-2xl font-bold text-accent mb-2 dark:text-white">Luxury Comfort</h3>
-              <p className="text-sm text-gray-600 dark:text-white">
-                From cozy cabins to private villas, enjoy modern amenities and thoughtful service.
-              </p>
-            </div>
+            {features.map((feature) => (
+              <button
+                key={feature.id}
+                onClick={() => setSelectedFeature(feature.id)}
+                className={`card text-center border hover:border-${feature.color}/30 dark:border-slate-700 dark:hover:border-${feature.color}/50 cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-xl ${feature.color === 'primary' ? 'border-gray-100' : feature.color === 'secondary' ? 'border-gray-100' : 'border-gray-100'
+                  }`}
+              >
+                <div className={`mx-auto mb-4 h-16 w-16 rounded-2xl bg-${feature.color}/10 flex items-center justify-center text-3xl`}>
+                  <span>{feature.icon}</span>
+                </div>
+                <h3 className="text-2xl font-bold text-accent mb-2 dark:text-white">{feature.title}</h3>
+                <p className="text-sm text-gray-600 dark:text-white mb-3">
+                  {feature.description}
+                </p>
+                <span className="text-xs text-primary font-semibold">Click to view gallery →</span>
+              </button>
+            ))}
           </div>
         </div>
       </section>
+
+      {/* Feature Modal */}
+      {selectedFeature && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn" onClick={() => setSelectedFeature(null)}>
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6 md:p-8 relative" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setSelectedFeature(null)}
+              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 flex items-center justify-center transition-colors"
+            >
+              <svg className="w-6 h-6 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <div className="mb-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className={`h-12 w-12 rounded-xl bg-${features.find(f => f.id === selectedFeature)?.color}/10 flex items-center justify-center text-2xl`}>
+                  <span>{features.find(f => f.id === selectedFeature)?.icon}</span>
+                </div>
+                <h2 className="text-2xl md:text-3xl font-bold text-accent dark:text-white">
+                  {features.find(f => f.id === selectedFeature)?.title}
+                </h2>
+              </div>
+              <p className="text-gray-600 dark:text-gray-300">
+                {features.find(f => f.id === selectedFeature)?.description}
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              {features.find(f => f.id === selectedFeature)?.images.map((imagePath, idx) => (
+                <div key={idx} className="aspect-video rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-slate-800 dark:to-slate-700 relative">
+                  <Image
+                    src={imagePath}
+                    alt={`${features.find(f => f.id === selectedFeature)?.title} - Image ${idx + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    onError={(e) => {
+                      // Fallback to placeholder if image doesn't exist
+                      e.currentTarget.style.display = 'none';
+                      const parent = e.currentTarget.parentElement;
+                      if (parent) {
+                        parent.innerHTML = `
+                          <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="text-center">
+                              <div class="text-4xl mb-2">${features.find(f => f.id === selectedFeature)?.icon}</div>
+                              <p class="text-sm text-gray-500 dark:text-gray-400">Image Placeholder ${idx + 1}</p>
+                              <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Add image to: ${imagePath}</p>
+                            </div>
+                          </div>
+                        `;
+                      }
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 text-center">
+              <button
+                onClick={() => setSelectedFeature(null)}
+                className="px-6 py-3 bg-primary hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors"
+              >
+                Close Gallery
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Accommodations Preview */}
       <section className="py-20 bg-gray-50 dark:bg-slate-950">
@@ -449,7 +555,7 @@ export default function Home() {
               <div className="text-4xl mb-3">🦌</div>
               <h4 className="text-lg font-semibold text-accent dark:text-white">Wildlife Tours</h4>
               <p className="mt-2 text-xs text-gray-600 dark:text-white">Discover local wildlife with our guided eco-tours.</p>
-          </div>
+            </div>
           </div>
 
           <div className="text-center mt-12">

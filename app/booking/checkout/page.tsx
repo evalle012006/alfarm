@@ -259,10 +259,10 @@ export default function BookingCheckoutPage() {
 
       <section className="py-16 bg-gradient-to-b from-gray-50 to-white dark:from-slate-950 dark:to-slate-900">
         <div className="container mx-auto px-4 max-w-6xl">
-          <div className="grid lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
+          <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 flex flex-col gap-6">
               {/* Payment Method Section */}
-              <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-lg hover:shadow-xl transition-shadow duration-300 p-6 md:p-8 border border-gray-100 dark:border-slate-800">
+              <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-lg hover:shadow-xl transition-shadow duration-300 p-6 md:p-8 border border-gray-100 dark:border-slate-800 order-1">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-600 flex items-center justify-center">
                     <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -370,7 +370,7 @@ export default function BookingCheckoutPage() {
               </div>
 
               {/* Guest Details Section */}
-              <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-lg hover:shadow-xl transition-shadow duration-300 p-6 md:p-8 border border-gray-100 dark:border-slate-800">
+              <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-lg hover:shadow-xl transition-shadow duration-300 p-6 md:p-8 border border-gray-100 dark:border-slate-800 order-3">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-secondary to-secondary-600 flex items-center justify-center">
                     <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -400,54 +400,57 @@ export default function BookingCheckoutPage() {
                   </div>
                 </div>
 
-                {/* Terms and Conditions */}
-                <div className="mt-8 p-5 rounded-2xl bg-gradient-to-br from-primary/5 to-secondary/5 dark:from-slate-800 dark:to-slate-800 border border-primary/20 dark:border-slate-700">
-                  <div className="flex items-start gap-3">
-                    <input
-                      id="terms"
-                      type="checkbox"
-                      checked={termsAccepted}
-                      onChange={(e) => setTermsAccepted(e.target.checked)}
-                      className="mt-1 w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
-                    />
-                    <label htmlFor="terms" className="text-sm text-gray-700 dark:text-gray-300 flex-1">
-                      I agree to the resort house rules and cancellation policy. I understand this is a demo booking system.
-                    </label>
+                {/* Terms and Action Buttons Container */}
+                <div className="order-2">
+                  {/* Terms and Conditions */}
+                  <div className="p-5 rounded-2xl bg-gradient-to-br from-primary/5 to-secondary/5 dark:from-slate-800 dark:to-slate-800 border border-primary/20 dark:border-slate-700">
+                    <div className="flex items-start gap-3">
+                      <input
+                        id="terms"
+                        type="checkbox"
+                        checked={termsAccepted}
+                        onChange={(e) => setTermsAccepted(e.target.checked)}
+                        className="mt-1 w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                      />
+                      <label htmlFor="terms" className="text-sm text-gray-700 dark:text-gray-300 flex-1">
+                        I agree to the resort house rules and cancellation policy. I understand this is a demo booking system.
+                      </label>
+                    </div>
                   </div>
-                </div>
 
-                {/* Action Buttons */}
-                <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                  <button
-                    type="button"
-                    onClick={() => router.push('/booking/info')}
-                    className="px-6 py-3 rounded-xl border-2 border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-white font-semibold hover:bg-gray-50 dark:hover:bg-slate-700 transition-all duration-200 w-full sm:w-auto text-center"
-                  >
-                    ← Back
-                  </button>
-                  <PrimaryButton
-                    onClick={() => {
-                      if (!termsAccepted) {
-                        setNotification({
-                          show: true,
-                          message: 'Please accept the terms and cancellation policy before continuing.',
-                          type: 'warning',
-                        });
-                        return;
-                      }
-                      setShowConfirmModal(true);
-                    }}
-                    disabled={isSubmitting || loadingProducts}
-                    className="w-full sm:flex-1 text-center"
-                  >
-                    Place Booking →
-                  </PrimaryButton>
+                  {/* Action Buttons */}
+                  <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                    <button
+                      type="button"
+                      onClick={() => router.push('/booking/info')}
+                      className="px-6 py-3 rounded-xl border-2 border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-white font-semibold hover:bg-gray-50 dark:hover:bg-slate-700 transition-all duration-200 w-full sm:w-auto text-center"
+                    >
+                      ← Back
+                    </button>
+                    <PrimaryButton
+                      onClick={() => {
+                        if (!termsAccepted) {
+                          setNotification({
+                            show: true,
+                            message: 'Please accept the terms and cancellation policy before continuing.',
+                            type: 'warning',
+                          });
+                          return;
+                        }
+                        setShowConfirmModal(true);
+                      }}
+                      disabled={isSubmitting || loadingProducts}
+                      className="w-full sm:flex-1 text-center"
+                    >
+                      Place Booking →
+                    </PrimaryButton>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Order Summary Sidebar */}
-            <aside className="lg:sticky lg:top-6 h-fit">
+            <aside className="lg:sticky lg:top-6 h-fit order-first lg:order-none">
               <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-lg hover:shadow-xl transition-shadow duration-300 p-6 md:p-8 border border-gray-100 dark:border-slate-800">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-accent-light flex items-center justify-center">

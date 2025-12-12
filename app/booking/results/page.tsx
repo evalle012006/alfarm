@@ -29,7 +29,7 @@ export default function BookingResultsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { state: bookingState, setSearch, incrementCart, setCartQuantity } = useBooking();
-  
+
   const searchType = (searchParams.get('type') || bookingState.bookingType || 'day') as 'day' | 'overnight';
   const checkInDate = searchParams.get('check_in') || searchParams.get('date') || bookingState.checkInDate || '';
   const checkOutDate = searchParams.get('check_out') || bookingState.checkOutDate || '';
@@ -136,7 +136,7 @@ export default function BookingResultsPage() {
     // 3. Filter by initial search type (Day-use vs Overnight)
     // For overnight: prioritize per_night items, hide day-only items
     // For day-use: prioritize day items, hide night-only items
-    
+
     return true;
   });
 
@@ -159,7 +159,7 @@ export default function BookingResultsPage() {
   };
 
   const totalItems = Object.values(cart).reduce((a, b) => a + b, 0);
-  
+
   // Calculate Entrance Fees
   const FEES = {
     DAY: { ADULT: 60, CHILD: 30 },
@@ -173,14 +173,14 @@ export default function BookingResultsPage() {
   const productCost = Object.entries(cart).reduce((sum, [id, qty]) => {
     const product = products.find(p => p.id === parseInt(id));
     if (!product) return sum;
-    
+
     // Check if this is a per_night item (rooms) for overnight bookings
     const isPerNight = product.type === 'room' && searchType === 'overnight';
     const multiplier = isPerNight ? numNights : 1;
-    
+
     return sum + (product.pricePerNight * qty * multiplier);
   }, 0);
-  
+
   const totalCost = productCost + totalEntranceFees;
 
   const handleProceed = () => {
@@ -209,40 +209,48 @@ export default function BookingResultsPage() {
       />
 
       {/* Hero / Summary */}
-      <section className="relative py-16 hero-gradient overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none opacity-60 mix-blend-screen">
-          <div className="mx-auto h-full max-w-4xl bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.4),_transparent_60%),_radial-gradient(circle_at_bottom,_rgba(96,165,250,0.25),_transparent_55%)]" />
-        </div>
-        <div className="relative container mx-auto px-4">
+      <section className="py-20 bg-gradient-to-br from-primary/5 via-white to-secondary/5 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900">
+        <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center animate-fadeIn">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-sky-700 dark:text-sky-300/80">
-              Step 2 of 5 · Select your stay
-            </p>
-            <h1 className="mb-4 text-3xl font-extrabold tracking-tight text-accent md:text-5xl dark:text-white">
-              Availability Results
+            <div className="inline-flex items-center gap-2 bg-primary/10 dark:bg-primary/20 px-4 py-2 rounded-full mb-4">
+              <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              </svg>
+              <span className="text-sm font-semibold text-primary">Step 2 of 4</span>
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold text-accent dark:text-white mb-4">
+              Select Your Stay
             </h1>
             <div className="max-w-2xl mx-auto mb-6">
               <BookingStepper current="select" />
             </div>
-            <p className="mb-5 text-sm text-slate-700 md:text-base dark:text-slate-200/80">
+            <p className="text-base text-gray-600 dark:text-gray-300 mb-6">
               {checkInDate ? (
-                searchType === 'overnight' && checkOutDate 
+                searchType === 'overnight' && checkOutDate
                   ? `${new Date(checkInDate).toLocaleDateString()} - ${new Date(checkOutDate).toLocaleDateString()} (${numNights} night${numNights > 1 ? 's' : ''})`
                   : `Showing options for ${new Date(checkInDate).toLocaleDateString()}`
               ) : 'Select your preferred accommodations and see what is available in real time.'}
             </p>
-            <div className="inline-flex flex-wrap items-center justify-center gap-3 rounded-full border border-slate-200 bg-white/90 px-5 py-2 text-xs font-medium text-slate-800 shadow-lg backdrop-blur-md dark:border-white/20 dark:bg-white/10 dark:text-slate-50 md:text-sm">
-              <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-slate-800 border border-slate-200 dark:border-transparent dark:bg-slate-900/40 dark:text-slate-100">
-                <span className="text-lg">📅</span>
+            <div className="inline-flex flex-wrap items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white/90 px-6 py-3 shadow-lg backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/80">
+              <span className="inline-flex items-center gap-2 text-sm font-medium text-accent dark:text-white">
+                <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
                 {checkInDate || 'No date selected'}
                 {searchType === 'overnight' && checkOutDate ? ` → ${checkOutDate}` : ''}
               </span>
-              <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-slate-800 border border-slate-200 dark:border-transparent dark:bg-slate-900/40 dark:text-slate-100">
-                <span className="text-lg">👥</span>
+              <span className="h-4 w-px bg-gray-300 dark:bg-slate-700"></span>
+              <span className="inline-flex items-center gap-2 text-sm font-medium text-accent dark:text-white">
+                <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
                 {searchAdults} Adults, {searchChildren} Kids
               </span>
-              <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-slate-800 border border-slate-200 capitalize dark:border-transparent dark:bg-slate-900/40 dark:text-slate-100">
-                <span className="text-lg">🌙</span>
+              <span className="h-4 w-px bg-gray-300 dark:bg-slate-700"></span>
+              <span className="inline-flex items-center gap-2 text-sm font-medium text-accent dark:text-white capitalize">
+                <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
                 {searchType === 'day' ? 'Day-use' : 'Overnight'}
               </span>
             </div>
@@ -251,64 +259,66 @@ export default function BookingResultsPage() {
       </section>
 
       {/* Filters + Results */}
-      <section className="py-12 bg-slate-50 pb-32 dark:bg-slate-950/95">
+      <section className="py-16 bg-gradient-to-b from-gray-50 to-white dark:from-slate-950 dark:to-slate-900 pb-32">
         <div className="container mx-auto max-w-6xl px-4">
           {/* Filter Bar */}
-          <div className="mb-10 rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm backdrop-blur-sm dark:border-slate-800/80 dark:bg-slate-900/80 dark:shadow-[0_18px_45px_rgba(15,23,42,0.85)] md:p-6">
+          <div className="mb-10 rounded-3xl border border-gray-200 bg-white shadow-lg dark:border-slate-800 dark:bg-slate-900 p-6 md:p-8">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="mb-1 text-xs font-semibold uppercase tracking-[0.2em] text-primary/80 dark:text-sky-300/80">
-                  Available Options
-                </p>
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-                  {loading ? 'Checking availability…' : `${filteredProducts.length} stays found`}
-                </h2>
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Adjust filters to find the perfect spot for your group.
-                </p>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-600 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-accent dark:text-white">
+                      {loading ? 'Checking availability…' : `${filteredProducts.length} Options Available`}
+                    </h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Choose your perfect accommodation
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <span className="mr-1 hidden text-xs font-medium text-slate-500 dark:text-slate-400 md:inline">
-                  Filter by
+                <span className="mr-1 text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Filter:
                 </span>
                 <button
                   onClick={() => setFilter('all')}
-                  className={`px-4 py-1.5 text-xs md:text-sm rounded-full border transition-colors ${
-                    filter === 'all'
-                      ? 'border-transparent bg-primary text-white shadow-sm'
-                      : 'border-slate-200/70 bg-white/40 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:bg-slate-800/80'
-                  }`}
+                  className={`px-4 py-2 text-sm rounded-xl border-2 transition-all duration-200 ${filter === 'all'
+                    ? 'border-primary bg-primary text-white shadow-md shadow-primary/30'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-primary/50 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-200 dark:hover:border-primary/50'
+                    }`}
                 >
                   All
                 </button>
                 <button
                   onClick={() => setFilter('room')}
-                  className={`px-4 py-1.5 text-xs md:text-sm rounded-full border transition-colors ${
-                    filter === 'room'
-                      ? 'border-transparent bg-primary text-white shadow-sm'
-                      : 'border-slate-200/70 bg-white/40 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:bg-slate-800/80'
-                  }`}
+                  className={`px-4 py-2 text-sm rounded-xl border-2 transition-all duration-200 ${filter === 'room'
+                    ? 'border-primary bg-primary text-white shadow-md shadow-primary/30'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-primary/50 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-200 dark:hover:border-primary/50'
+                    }`}
                 >
                   Rooms
                 </button>
                 <button
                   onClick={() => setFilter('day-use')}
-                  className={`px-4 py-1.5 text-xs md:text-sm rounded-full border transition-colors ${
-                    filter === 'day-use'
-                      ? 'border-transparent bg-primary text-white shadow-sm'
-                      : 'border-slate-200/70 bg-white/40 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:bg-slate-800/80'
-                  }`}
+                  className={`px-4 py-2 text-sm rounded-xl border-2 transition-all duration-200 ${filter === 'day-use'
+                    ? 'border-primary bg-primary text-white shadow-md shadow-primary/30'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-primary/50 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-200 dark:hover:border-primary/50'
+                    }`}
                 >
                   Cottages & Day Use
                 </button>
                 <button
                   onClick={() => setFilter('add-on')}
-                  className={`px-4 py-1.5 text-xs md:text-sm rounded-full border transition-colors ${
-                    filter === 'add-on'
-                      ? 'border-transparent bg-primary text-white shadow-sm'
-                      : 'border-slate-200/70 bg-white/40 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:bg-slate-800/80'
-                  }`}
+                  className={`px-4 py-2 text-sm rounded-xl border-2 transition-all duration-200 ${filter === 'add-on'
+                    ? 'border-primary bg-primary text-white shadow-md shadow-primary/30'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-primary/50 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-200 dark:hover:border-primary/50'
+                    }`}
                 >
                   Add-ons
                 </button>
@@ -323,12 +333,12 @@ export default function BookingResultsPage() {
               <p className="text-gray-600 dark:text-white">Loading availability...</p>
             </div>
           )}
-          
+
           {error && (
-             <div className="text-center py-12 bg-red-50 rounded-lg">
-               <p className="text-red-600 font-medium">{error}</p>
-               <button onClick={() => window.location.reload()} className="mt-4 text-sm underline">Try Again</button>
-             </div>
+            <div className="text-center py-12 bg-red-50 rounded-lg">
+              <p className="text-red-600 font-medium">{error}</p>
+              <button onClick={() => window.location.reload()} className="mt-4 text-sm underline">Try Again</button>
+            </div>
           )}
 
           {/* Product Cards */}
@@ -338,95 +348,95 @@ export default function BookingResultsPage() {
                 const quantity = cart[product.id] || 0;
                 const remaining = availabilityMap[product.id]?.remaining;
                 const isAvailable = availabilityMap[product.id]?.is_available ?? true;
-                
+
                 return (
                   <article
                     key={product.id}
-                    className={`card flex h-full flex-col rounded-2xl border border-slate-200/80 bg-white/90 shadow-sm transition-all duration-300 dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-[0_20px_45px_rgba(15,23,42,0.85)] ${
-                      quantity > 0
-                        ? 'ring-2 ring-primary shadow-lg dark:ring-sky-400'
-                        : 'hover:-translate-y-1 hover:shadow-lg dark:hover:shadow-[0_28px_70px_rgba(15,23,42,0.9)]'
-                    }`}
+                    className={`flex h-full flex-col rounded-3xl border bg-white shadow-lg transition-all duration-300 dark:bg-slate-900 dark:border-slate-800 ${quantity > 0
+                      ? 'ring-2 ring-primary shadow-xl scale-105 dark:ring-primary-400'
+                      : 'border-gray-200 hover:-translate-y-2 hover:shadow-2xl'
+                      }`}
                   >
-                    <div className="flex-1">
+                    <div className="flex-1 p-6">
                       <div className="mb-4 flex items-start justify-between gap-2">
-                        <span className="inline-flex items-center rounded-full border border-sky-500/40 bg-sky-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-sky-700 dark:border-sky-400/40 dark:bg-sky-500/15 dark:text-sky-200">
+                        <span className="inline-flex items-center rounded-full bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary dark:border-primary/30 dark:from-primary/20 dark:to-secondary/20">
                           {product.category}
                         </span>
                         <div className="flex items-center gap-2">
                           {typeof remaining === 'number' && (
                             <span
-                              className={`inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${
-                                isAvailable
-                                  ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:border-emerald-400/50 dark:bg-emerald-500/15 dark:text-emerald-200'
-                                  : 'border-red-500/50 bg-red-500/10 text-red-600 dark:border-red-400/50 dark:bg-red-500/15 dark:text-red-200'
-                              }`}
+                              className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wider ${isAvailable
+                                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
+                                : 'border-red-500/30 bg-red-500/10 text-red-700 dark:bg-red-500/20 dark:text-red-300'
+                                }`}
                             >
                               {isAvailable ? `${remaining} left` : 'Sold out'}
                             </span>
                           )}
                           {quantity > 0 && (
-                            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/90 text-xs font-bold text-white shadow-md ring-2 ring-primary/30">
+                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-600 text-sm font-bold text-white shadow-lg">
                               {quantity}
                             </span>
                           )}
                         </div>
                       </div>
-                      
-                      <h3 className="mb-2 text-xl font-semibold text-accent dark:text-white">
+
+                      <h3 className="mb-3 text-lg font-bold text-accent dark:text-white">
                         {product.title}
                       </h3>
 
-                      <p className="mb-4 text-2xl font-semibold text-slate-900 dark:text-slate-50">
-                        ₱{product.pricePerNight.toLocaleString()}
-                        <span className="ml-2 inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.18em] text-primary-700 dark:bg-primary/20 dark:text-primary-200">
-                          / {product.type === 'day-use' ? 'day' : 'night'}
-                        </span>
-                        {product.type === 'room' && searchType === 'overnight' && numNights > 1 && (
-                          <span className="mt-1 block text-xs font-normal text-slate-500 dark:text-slate-400">
-                            ₱{(product.pricePerNight * numNights).toLocaleString()} total for {numNights} nights
+                      <div className="mb-4">
+                        <p className="text-2xl font-bold text-accent dark:text-white">
+                          ₱{product.pricePerNight.toLocaleString()}
+                          <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
+                            / {product.type === 'day-use' ? 'day' : 'night'}
                           </span>
+                        </p>
+                        {product.type === 'room' && searchType === 'overnight' && numNights > 1 && (
+                          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                            ₱{(product.pricePerNight * numNights).toLocaleString()} for {numNights} nights
+                          </p>
                         )}
-                      </p>
+                      </div>
 
                       <div className="flex flex-wrap gap-2 mb-4">
                         {product.capacity.map((tag, idx) => (
                           <span
                             key={idx}
-                            className="px-2 py-1 text-[10px] rounded bg-primary/5 text-primary-700 dark:bg-primary/20 dark:text-primary-200"
+                            className="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300"
                           >
                             {tag}
                           </span>
                         ))}
                       </div>
 
-                      <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-3 mb-4">
+                      <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
                         {product.description}
                       </p>
                     </div>
 
-                    <div className="mt-auto pt-4 border-t border-gray-100 dark:border-slate-800">
+                    <div className="p-6 pt-0">
                       {quantity === 0 ? (
                         <button
                           onClick={() => updateCart(product.id, 1)}
                           disabled={typeof remaining === 'number' ? remaining <= 0 : false}
-                          className="btn-outline w-full py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-full py-3 rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-primary to-primary-600 text-white hover:shadow-lg hover:shadow-primary/30 hover:scale-105"
                         >
                           {typeof remaining === 'number' && remaining <= 0 ? 'Not Available' : 'Add to Booking'}
                         </button>
                       ) : (
-                        <div className="flex items-center justify-between bg-gray-50 dark:bg-slate-800 rounded-lg p-1">
+                        <div className="flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-700 rounded-xl p-2 border-2 border-primary/20">
                           <button
                             onClick={() => updateCart(product.id, -1)}
-                            className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-red-500 transition-colors"
+                            className="w-10 h-10 flex items-center justify-center rounded-lg bg-white dark:bg-slate-900 text-gray-700 dark:text-white hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 transition-all duration-200 font-bold text-lg shadow-sm"
                           >
-                            -
+                            −
                           </button>
-                          <span className="font-bold text-accent dark:text-white">{quantity}</span>
+                          <span className="font-bold text-xl text-accent dark:text-white">{quantity}</span>
                           <button
                             onClick={() => updateCart(product.id, 1)}
                             disabled={typeof remaining === 'number' ? quantity >= remaining : false}
-                            className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-10 h-10 flex items-center justify-center rounded-lg bg-white dark:bg-slate-900 text-gray-700 dark:text-white hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg shadow-sm"
                           >
                             +
                           </button>
@@ -443,27 +453,34 @@ export default function BookingResultsPage() {
 
       {/* Sticky Summary Footer */}
       {(totalItems > 0 || totalEntranceFees > 0) && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white/95 p-3 shadow-[0_-8px_30px_rgba(15,23,42,0.12)] backdrop-blur-md animate-slideUp dark:border-slate-800/80 dark:bg-slate-950/95 dark:shadow-[0_-18px_60px_rgba(15,23,42,0.9)]">
-          <div className="container mx-auto flex max-w-6xl flex-col items-stretch gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                Total Estimate
-              </p>
-              <div className="mt-1 flex flex-wrap items-baseline gap-2 text-slate-900 dark:text-slate-100">
-                <span className="text-2xl font-bold text-primary dark:text-primary-300">
-                  ₱{totalCost.toLocaleString()}
-                </span>
-                <span className="text-xs md:text-sm text-slate-600 dark:text-slate-300">
-                  {totalItems > 0 ? `for ${totalItems} item${totalItems !== 1 ? 's' : ''}` : ''}{' '}
-                  <span className="ml-1 text-[11px] text-slate-500 dark:text-slate-400">
-                    (incl. ₱{totalEntranceFees} entrance fees)
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-primary/20 bg-gradient-to-r from-white via-gray-50 to-white dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-4 shadow-2xl backdrop-blur-md animate-slideUp">
+          <div className="container mx-auto flex max-w-6xl flex-col items-stretch gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-4">
+              <div className="hidden md:flex w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary-600 items-center justify-center shadow-lg">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  Total Estimate
+                </p>
+                <div className="flex flex-wrap items-baseline gap-2">
+                  <span className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                    ₱{totalCost.toLocaleString()}
                   </span>
-                </span>
+                  <span className="text-sm text-gray-600 dark:text-gray-300">
+                    {totalItems > 0 ? `for ${totalItems} item${totalItems !== 1 ? 's' : ''}` : ''}
+                    <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">
+                      (incl. ₱{totalEntranceFees} entrance)
+                    </span>
+                  </span>
+                </div>
               </div>
             </div>
             <PrimaryButton
               onClick={handleProceed}
-              className="w-full justify-center px-8 py-3 text-sm font-semibold shadow-lg shadow-primary/40 md:w-auto"
+              className="w-full md:w-auto justify-center px-8 py-4 text-base font-semibold shadow-xl shadow-primary/40 hover:shadow-2xl hover:shadow-primary/50 hover:scale-105 transition-all duration-200"
             >
               Proceed to Booking →
             </PrimaryButton>

@@ -28,7 +28,7 @@ export default function GuestLogin() {
     setError('');
     setLoading(true);
 
-    const result = await login(formData.email, formData.password, 'guest');
+    const result = await login(formData.email, formData.password);
 
     if (result.success) {
       router.push('/guest/dashboard');

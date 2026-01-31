@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
@@ -25,7 +25,7 @@ interface AvailabilityItem {
   is_available: boolean;
 }
 
-export default function BookingResultsPage() {
+function BookingResultsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { state: bookingState, setSearch, incrementCart, setCartQuantity } = useBooking();
@@ -493,4 +493,15 @@ export default function BookingResultsPage() {
   );
 }
 
+export default function BookingResultsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    }>
+      <BookingResultsContent />
+    </Suspense>
+  );
+}
 

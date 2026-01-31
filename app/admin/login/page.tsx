@@ -1,14 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useAuth } from '@/lib/AuthContext';
 
+/**
+ * Admin Login Page
+ * 
+ * Uses cookie-based authentication (httpOnly cookie set by server).
+ * Does NOT use AuthContext - admin auth is separate from guest auth.
+ */
 export default function AdminLogin() {
   const router = useRouter();
-  const { login, isAuthenticated, user, isLoading } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -16,29 +20,52 @@ export default function AdminLogin() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Redirect if already authenticated as admin/root
-  useEffect(() => {
-    if (!isLoading && isAuthenticated && user && (user.role === 'admin' || user.role === 'root')) {
-      router.push('/admin/dashboard');
-    }
-  }, [isAuthenticated, isLoading, user, router]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    // Try root first, then admin
-    let result = await login(formData.email, formData.password, 'root');
-    
-    if (!result.success) {
-      result = await login(formData.email, formData.password, 'admin');
-    }
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          // NOTE: role is intentionally NOT sent - server determines from DB
+        }),
+        credentials: 'include', // Important: include cookies in request/response
+      });
 
-    if (result.success) {
-      router.push('/admin/dashboard');
-    } else {
-      setError(result.error || 'Login failed');
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Login failed');
+        setLoading(false);
+        return;
+      }
+
+      // Check if this is an admin login response (has 'ok' field, no 'token' field)
+      if (data.ok && data.user) {
+        // Admin login successful - cookie is set by server
+        // Redirect to dashboard
+        router.push('/admin/dashboard');
+        return;
+      }
+
+      // If we got a token in response, this is a guest account trying to login
+      // Guest accounts should not be able to access admin
+      if (data.token) {
+        setError('Invalid credentials');
+        setLoading(false);
+        return;
+      }
+
+      // Unexpected response
+      setError('Login failed');
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Network error. Please try again.');
     }
     
     setLoading(false);

@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { hashPassword, generateToken, verifyPassword } from '@/lib/auth';
+import { ROLE_GUEST } from '@/lib/roles';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, firstName, lastName, phone, role } = await request.json();
+    // SECURITY: Destructure but IGNORE any client-provided 'role' field
+    // Registration ALWAYS creates guest accounts. Admin accounts must be created
+    // through other means (direct DB insert, admin panel, etc.)
+    const { email, password, firstName, lastName, phone } = await request.json();
 
     if (!email || !password || !firstName || !lastName) {
       return NextResponse.json(
@@ -59,16 +63,16 @@ export async function POST(request: NextRequest) {
       userRole = existing.role; // Keep existing role (guest)
       isClaimedAccount = true;
     } else {
-      // New user - create account
+      // New user - create account with ROLE_GUEST (always)
       const hashedPassword = await hashPassword(password);
 
       const result = await pool.query(
         'INSERT INTO users (email, password, first_name, last_name, phone, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
-        [email, hashedPassword, firstName, lastName, phone || null, role || 'guest']
+        [email, hashedPassword, firstName, lastName, phone || null, ROLE_GUEST]
       );
 
       userId = result.rows[0].id;
-      userRole = role || 'guest';
+      userRole = ROLE_GUEST;
     }
 
     // Generate token

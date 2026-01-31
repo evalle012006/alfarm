@@ -1,248 +1,230 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import pool from '@/lib/db';
 import { sendBookingConfirmationEmail } from '@/lib/email';
+import { checkRateLimit, RateLimitPresets } from '@/lib/rateLimit';
+import { ErrorResponses, handleUnexpectedError } from '@/lib/apiErrors';
 
-// Validation helpers
-function validateEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
+/**
+ * Zod schema for booking creation payload
+ * Validates all input before processing
+ */
+const BookingItemSchema = z.object({
+  product_id: z.number().int().positive(),
+  quantity: z.number().int().min(1).max(100),
+});
 
-function validatePhone(phone: string): boolean {
-  // Allow various phone formats, minimum 7 digits
-  return phone.replace(/[^0-9]/g, '').length >= 7;
-}
+const GuestInfoSchema = z.object({
+  first_name: z.string().trim().min(1, 'First name is required'),
+  last_name: z.string().trim().min(1, 'Last name is required'),
+  email: z.string().email('Valid email address is required'),
+  phone: z.string().trim().min(7, 'Valid phone number is required (minimum 7 digits)'),
+});
 
-function validateDate(dateStr: string): boolean {
-  const date = new Date(dateStr);
-  return !isNaN(date.getTime());
-}
+const BookingPayloadSchema = z.object({
+  booking_type: z.enum(['day', 'overnight']),
+  booking_date: z.string().datetime({ message: 'Invalid booking date format' }).or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)),
+  check_out_date: z.string().datetime().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional().nullable(),
+  booking_time: z.string().optional().nullable(),
+  guest_info: GuestInfoSchema,
+  items: z.array(BookingItemSchema).min(1, 'At least one item is required'),
+}).refine(
+  (data) => {
+    // Overnight bookings must have check_out_date
+    if (data.booking_type === 'overnight') {
+      return !!data.check_out_date;
+    }
+    return true;
+  },
+  {
+    message: 'Check-out date is required for overnight bookings',
+    path: ['check_out_date'],
+  }
+).refine(
+  (data) => {
+    // Check-out must be after check-in for overnight
+    if (data.booking_type === 'overnight' && data.check_out_date) {
+      const checkIn = new Date(data.booking_date);
+      const checkOut = new Date(data.check_out_date);
+      return checkOut > checkIn;
+    }
+    return true;
+  },
+  {
+    message: 'Check-out date must be after check-in date',
+    path: ['check_out_date'],
+  }
+).refine(
+  (data) => {
+    // Booking date cannot be in the past
+    const bookingDate = new Date(data.booking_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return bookingDate >= today;
+  },
+  {
+    message: 'Booking date cannot be in the past',
+    path: ['booking_date'],
+  }
+).refine(
+  (data) => {
+    // Max stay validation (30 nights)
+    if (data.booking_type === 'overnight' && data.check_out_date) {
+      const checkIn = new Date(data.booking_date);
+      const checkOut = new Date(data.check_out_date);
+      const stayDays = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+      return stayDays <= 30;
+    }
+    return true;
+  },
+  {
+    message: 'Maximum stay is 30 nights',
+    path: ['check_out_date'],
+  }
+);
 
-function isDateInPast(dateStr: string): boolean {
-  const date = new Date(dateStr);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return date < today;
-}
+type BookingPayload = z.infer<typeof BookingPayloadSchema>;
 
+/**
+ * POST /api/bookings
+ * Create a new booking with concurrency protection
+ * 
+ * CRITICAL FEATURES:
+ * - Row-level locking (FOR UPDATE) prevents overselling
+ * - Zod validation ensures data integrity
+ * - Rate limiting prevents abuse
+ * - Standardized error responses
+ */
 export async function POST(request: NextRequest) {
+  // ============================================
+  // RATE LIMITING
+  // ============================================
+  const rateLimitResponse = checkRateLimit(
+    request,
+    RateLimitPresets.booking.limit,
+    RateLimitPresets.booking.windowMs
+  );
+  
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
+  // ============================================
+  // INPUT VALIDATION (Zod)
+  // ============================================
+  let body: BookingPayload;
+  
+  try {
+    const rawBody = await request.json();
+    body = BookingPayloadSchema.parse(rawBody);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return ErrorResponses.validationError(
+        'Invalid booking data',
+        error.issues
+      );
+    }
+    return ErrorResponses.validationError('Invalid JSON in request body');
+  }
+
+  const { 
+    guest_info, 
+    booking_date,
+    check_out_date,
+    booking_time,
+    booking_type,
+    items 
+  } = body;
+
+  // ============================================
+  // DATABASE TRANSACTION WITH ROW-LEVEL LOCKING
+  // ============================================
   const client = await pool.connect();
   
   try {
-    const body = await request.json();
-    const { 
-      guest_info, 
-      booking_date,      // Check-in date (required)
-      check_out_date,    // Check-out date (required for overnight)
-      booking_time,      // For day tours
-      booking_type,      // 'day' or 'overnight'
-      items 
-    } = body;
-
-    // ============================================
-    // VALIDATION PHASE
-    // ============================================
-
-    // 1. Required fields check
-    if (!guest_info || !booking_date || !items || items.length === 0) {
-      return NextResponse.json(
-        { error: 'Missing required booking information' },
-        { status: 400 }
-      );
-    }
-
-    // 2. Guest info validation
-    if (!guest_info.first_name?.trim()) {
-      return NextResponse.json(
-        { error: 'Guest first name is required' },
-        { status: 400 }
-      );
-    }
-
-    if (!guest_info.last_name?.trim()) {
-      return NextResponse.json(
-        { error: 'Guest last name is required' },
-        { status: 400 }
-      );
-    }
-
-    if (!guest_info.email?.trim() || !validateEmail(guest_info.email)) {
-      return NextResponse.json(
-        { error: 'Valid email address is required' },
-        { status: 400 }
-      );
-    }
-
-    if (!guest_info.phone?.trim() || !validatePhone(guest_info.phone)) {
-      return NextResponse.json(
-        { error: 'Valid phone number is required (minimum 7 digits)' },
-        { status: 400 }
-      );
-    }
-
-    // 3. Date validation
-    if (!validateDate(booking_date)) {
-      return NextResponse.json(
-        { error: 'Invalid booking date format' },
-        { status: 400 }
-      );
-    }
-
-    if (isDateInPast(booking_date)) {
-      return NextResponse.json(
-        { error: 'Booking date cannot be in the past' },
-        { status: 400 }
-      );
-    }
-
-    const type = booking_type || 'day';
-
-    // 4. Overnight-specific validation
-    if (type === 'overnight') {
-      if (!check_out_date) {
-        return NextResponse.json(
-          { error: 'Check-out date is required for overnight bookings' },
-          { status: 400 }
-        );
-      }
-
-      if (!validateDate(check_out_date)) {
-        return NextResponse.json(
-          { error: 'Invalid check-out date format' },
-          { status: 400 }
-        );
-      }
-
-      const checkIn = new Date(booking_date);
-      const checkOut = new Date(check_out_date);
-      
-      if (checkOut <= checkIn) {
-        return NextResponse.json(
-          { error: 'Check-out date must be after check-in date' },
-          { status: 400 }
-        );
-      }
-
-      // Max stay validation (e.g., 30 days)
-      const maxStayDays = 30;
-      const stayDays = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
-      if (stayDays > maxStayDays) {
-        return NextResponse.json(
-          { error: `Maximum stay is ${maxStayDays} nights` },
-          { status: 400 }
-        );
-      }
-    }
-
-    // 5. Items validation
-    for (const item of items) {
-      if (!item.product_id || typeof item.product_id !== 'number') {
-        return NextResponse.json(
-          { error: 'Invalid product ID in booking items' },
-          { status: 400 }
-        );
-      }
-
-      if (!item.quantity || item.quantity < 1 || !Number.isInteger(item.quantity)) {
-        return NextResponse.json(
-          { error: 'Quantity must be a positive integer' },
-          { status: 400 }
-        );
-      }
-
-      if (item.quantity > 100) {
-        return NextResponse.json(
-          { error: 'Maximum quantity per item is 100' },
-          { status: 400 }
-        );
-      }
-    }
-
-    // ============================================
-    // DATABASE TRANSACTION
-    // ============================================
     await client.query('BEGIN');
 
-    // 1. Validate products exist and check capacity
+    // ============================================
+    // STEP 1: LOCK PRODUCTS AND VALIDATE INVENTORY
+    // CRITICAL: FOR UPDATE prevents concurrent overselling
+    // ============================================
+    const lockedProducts = new Map<number, any>();
+    
     for (const item of items) {
-      const productCheck = await client.query(
-        `SELECT id, name, capacity, inventory_count, is_active, pricing_unit 
-         FROM products WHERE id = $1`,
+      // Lock the product row for this transaction
+      const productLock = await client.query(
+        `SELECT id, name, price, pricing_unit, inventory_count, is_active
+         FROM products 
+         WHERE id = $1
+         FOR UPDATE`,
         [item.product_id]
       );
 
-      if (productCheck.rows.length === 0) {
-        throw new Error(`Product with ID ${item.product_id} not found`);
+      if (productLock.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return ErrorResponses.notFound(`Product with ID ${item.product_id} not found`);
       }
 
-      const product = productCheck.rows[0];
+      const product = productLock.rows[0];
+      lockedProducts.set(item.product_id, product);
 
       if (!product.is_active) {
-        throw new Error(`Product "${product.name}" is currently unavailable`);
-      }
-
-      // Capacity check for per_head items (entrance fees, tours)
-      if (product.pricing_unit === 'per_head' && product.capacity > 0) {
-        // For per_head items, quantity represents number of people
-        // This is informational - we don't block based on capacity for entrance fees
+        await client.query('ROLLBACK');
+        return ErrorResponses.conflict(`Product "${product.name}" is currently unavailable`);
       }
     }
 
-    // 2. Verify availability (inventory check with overlap detection)
+    // ============================================
+    // STEP 2: CHECK AVAILABILITY WITH DATE OVERLAP
+    // Uses locked inventory_count from previous step
+    // ============================================
     for (const item of items) {
-      const availQuery = type === 'overnight' && check_out_date
+      const product = lockedProducts.get(item.product_id)!;
+      
+      // Calculate booked quantity for date range
+      const availQuery = booking_type === 'overnight' && check_out_date
         ? `
-          SELECT 
-            p.name,
-            p.inventory_count,
-            COALESCE(SUM(bi.quantity), 0)::int as booked
-          FROM products p
-          LEFT JOIN booking_items bi ON bi.product_id = p.id
-          LEFT JOIN bookings b ON bi.booking_id = b.id 
+          SELECT COALESCE(SUM(bi.quantity), 0)::int as booked
+          FROM booking_items bi
+          INNER JOIN bookings b ON bi.booking_id = b.id
+          WHERE bi.product_id = $1
             AND b.status NOT IN ('cancelled', 'completed')
             AND b.booking_date < $3::date
             AND COALESCE(b.check_out_date, b.booking_date + INTERVAL '1 day') > $2::date
-          WHERE p.id = $1
-          GROUP BY p.id, p.name, p.inventory_count
         `
         : `
-          SELECT 
-            p.name,
-            p.inventory_count,
-            COALESCE(SUM(bi.quantity), 0)::int as booked
-          FROM products p
-          LEFT JOIN booking_items bi ON bi.product_id = p.id
-          LEFT JOIN bookings b ON bi.booking_id = b.id 
+          SELECT COALESCE(SUM(bi.quantity), 0)::int as booked
+          FROM booking_items bi
+          INNER JOIN bookings b ON bi.booking_id = b.id
+          WHERE bi.product_id = $1
             AND b.status NOT IN ('cancelled', 'completed')
             AND (
               (b.booking_type = 'day' AND b.booking_date = $2::date)
               OR (b.booking_type = 'overnight' AND b.booking_date <= $2::date AND b.check_out_date > $2::date)
             )
-          WHERE p.id = $1
-          GROUP BY p.id, p.name, p.inventory_count
         `;
 
-      const availParams = type === 'overnight' && check_out_date
+      const availParams = booking_type === 'overnight' && check_out_date
         ? [item.product_id, booking_date, check_out_date]
         : [item.product_id, booking_date];
 
       const availRes = await client.query(availQuery, availParams);
-      
-      if (availRes.rows.length === 0) {
-        throw new Error(`Product ${item.product_id} not found`);
-      }
+      const booked = availRes.rows[0]?.booked || 0;
+      const remaining = product.inventory_count - booked;
 
-      const { name, inventory_count, booked } = availRes.rows[0];
-      const remaining = inventory_count - booked;
-
+      // CRITICAL: Inventory check with locked value
       if (remaining < item.quantity) {
-        throw new Error(
-          `"${name}" is not available in the requested quantity. ` +
+        await client.query('ROLLBACK');
+        return ErrorResponses.insufficientInventory(
+          `"${product.name}" is not available in the requested quantity. ` +
           `Available: ${remaining}, Requested: ${item.quantity}`
         );
       }
     }
 
-    // 2. Create User (Shadow Account) or Update Existing
+    // ============================================
+    // STEP 3: CREATE OR FIND USER (SHADOW ACCOUNT)
+    // ============================================
     let userId = null;
     const userRes = await client.query(
       'SELECT id FROM users WHERE email = $1',
@@ -267,15 +249,19 @@ export async function POST(request: NextRequest) {
       userId = newUser.rows[0].id;
     }
 
-    // 3. Calculate number of nights for pricing (overnight only)
+    // ============================================
+    // STEP 4: CALCULATE PRICING
+    // ============================================
     let numNights = 1;
-    if (type === 'overnight' && check_out_date) {
+    if (booking_type === 'overnight' && check_out_date) {
       const checkIn = new Date(booking_date);
       const checkOut = new Date(check_out_date);
       numNights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
     }
 
-    // 4. Create Booking Header
+    // ============================================
+    // STEP 5: CREATE BOOKING HEADER
+    // ============================================
     const bookingRes = await client.query(
       `INSERT INTO bookings (
         user_id, 
@@ -293,30 +279,24 @@ export async function POST(request: NextRequest) {
         booking_date,
         check_out_date || null,
         booking_time || null,
-        type
+        booking_type
       ]
     );
     const bookingId = bookingRes.rows[0].id;
 
-    // 5. Insert Items with proper pricing
+    // ============================================
+    // STEP 6: INSERT BOOKING ITEMS
+    // Use locked product data from Step 1
+    // ============================================
     let totalAmount = 0;
     for (const item of items) {
-      const productRes = await client.query(
-        'SELECT price, pricing_unit FROM products WHERE id = $1',
-        [item.product_id]
-      );
-
-      if (productRes.rows.length === 0) {
-        throw new Error(`Product ${item.product_id} not found`);
-      }
-
-      const price = parseFloat(productRes.rows[0].price);
-      const pricingUnit = productRes.rows[0].pricing_unit;
+      const product = lockedProducts.get(item.product_id)!;
+      const price = parseFloat(product.price);
+      const pricingUnit = product.pricing_unit;
       
       // Calculate subtotal based on pricing unit
       let subtotal: number;
-      if (pricingUnit === 'per_night' && type === 'overnight') {
-        // Multiply by number of nights for per_night items
+      if (pricingUnit === 'per_night' && booking_type === 'overnight') {
         subtotal = price * item.quantity * numNights;
       } else {
         subtotal = price * item.quantity;
@@ -332,7 +312,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 6. Update Total Amount
+    // ============================================
+    // STEP 7: UPDATE TOTAL AND COMMIT
+    // ============================================
     await client.query(
       'UPDATE bookings SET total_amount = $1 WHERE id = $2',
       [totalAmount, bookingId]
@@ -340,34 +322,28 @@ export async function POST(request: NextRequest) {
 
     await client.query('COMMIT');
 
-    // 7. Send confirmation email (non-blocking)
-    // Fetch product names for email
-    const itemsForEmail = await Promise.all(
-      items.map(async (item: { product_id: number; quantity: number }) => {
-        const productRes = await pool.query(
-          'SELECT name, price, pricing_unit FROM products WHERE id = $1',
-          [item.product_id]
-        );
-        const product = productRes.rows[0];
-        const price = parseFloat(product.price);
-        const isPerNight = product.pricing_unit === 'per_night' && type === 'overnight';
-        const subtotal = price * item.quantity * (isPerNight ? numNights : 1);
-        return {
-          name: product.name,
-          quantity: item.quantity,
-          subtotal,
-        };
-      })
-    );
+    // ============================================
+    // STEP 8: SEND CONFIRMATION EMAIL (NON-BLOCKING)
+    // ============================================
+    const itemsForEmail = items.map((item) => {
+      const product = lockedProducts.get(item.product_id)!;
+      const price = parseFloat(product.price);
+      const isPerNight = product.pricing_unit === 'per_night' && booking_type === 'overnight';
+      const subtotal = price * item.quantity * (isPerNight ? numNights : 1);
+      return {
+        name: product.name,
+        quantity: item.quantity,
+        subtotal,
+      };
+    });
 
-    // Send email asynchronously (don't wait for it)
     sendBookingConfirmationEmail({
       booking_id: bookingId,
       guest_name: `${guest_info.first_name} ${guest_info.last_name}`,
       guest_email: guest_info.email,
       booking_date,
       check_out_date: check_out_date || null,
-      booking_type: type as 'day' | 'overnight',
+      booking_type: booking_type,
       total_amount: totalAmount,
       items: itemsForEmail,
       status: 'pending',
@@ -376,21 +352,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       booking_id: bookingId,
       message: 'Booking created successfully',
-      booking_type: type,
+      booking_type: booking_type,
       check_in: booking_date,
       check_out: check_out_date || null,
-      nights: type === 'overnight' ? numNights : null,
+      nights: booking_type === 'overnight' ? numNights : null,
       total_amount: totalAmount
     });
 
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('Booking creation error:', error);
-    const message = error instanceof Error ? error.message : 'Failed to create booking';
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    return handleUnexpectedError(error);
   } finally {
     client.release();
   }

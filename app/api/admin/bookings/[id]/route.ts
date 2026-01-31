@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import { requireRole } from '@/lib/authMiddleware';
+import { requirePermission } from '@/lib/rbac';
+import { handleUnexpectedError } from '@/lib/apiErrors';
 
 // GET - Get single booking details
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const { response } = requireRole(request, ['admin', 'root']);
-  if (response) return response;
+  // RBAC: Require bookings:read permission
+  const check = await requirePermission(request, 'bookings:read');
+  if (!check.authorized) return check.response;
 
   try {
     const bookingId = parseInt(params.id);
@@ -72,8 +74,9 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const { response, user } = requireRole(request, ['admin', 'root']);
-  if (response) return response;
+  // RBAC: Require bookings:update permission
+  const check = await requirePermission(request, 'bookings:update');
+  if (!check.authorized) return check.response;
 
   try {
     const bookingId = parseInt(params.id);
@@ -177,8 +180,9 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const { response, user } = requireRole(request, ['admin', 'root']);
-  if (response) return response;
+  // RBAC: Require bookings:cancel permission
+  const check = await requirePermission(request, 'bookings:cancel');
+  if (!check.authorized) return check.response;
 
   try {
     const bookingId = parseInt(params.id);

@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS users (
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     phone VARCHAR(20),
-    role VARCHAR(20) DEFAULT 'guest' CHECK (role IN ('admin', 'guest', 'root')),
+    role VARCHAR(20) DEFAULT 'guest' CHECK (role IN ('super_admin', 'cashier', 'guest', 'admin', 'root')),
+    is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -25,7 +26,7 @@ CREATE TABLE IF NOT EXISTS categories (
 CREATE TABLE IF NOT EXISTS products (
     id SERIAL PRIMARY KEY,
     category_id INT REFERENCES categories(id),
-    name VARCHAR(100) NOT NULL,
+    name VARCHAR(100) UNIQUE NOT NULL,
     description TEXT,
     capacity INT DEFAULT 0, -- Max people per unit (0 for things like rentals)
     price DECIMAL(10, 2) NOT NULL,
@@ -50,11 +51,16 @@ CREATE TABLE IF NOT EXISTS bookings (
     check_out_date DATE, -- NULL for day-use, set for overnight stays
     booking_time TIME, -- For day tours
     booking_type VARCHAR(20) DEFAULT 'day' CHECK (booking_type IN ('day', 'overnight')),
-    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'checked_in', 'completed', 'cancelled')),
-    payment_status VARCHAR(20) DEFAULT 'unpaid' CHECK (payment_status IN ('unpaid', 'partial', 'paid', 'refunded')),
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'checked_in', 'checked_out', 'completed', 'cancelled')),
+    payment_status VARCHAR(20) DEFAULT 'unpaid' CHECK (payment_status IN ('unpaid', 'partial', 'paid', 'voided', 'refunded')),
     total_amount DECIMAL(10, 2) NOT NULL,
     qr_code_hash VARCHAR(255), -- Unique identifier for the QR code
     special_requests TEXT,
+    checked_in_at TIMESTAMP, -- When guest checked in
+    checked_out_at TIMESTAMP, -- When guest checked out
+    checked_in_by INT REFERENCES users(id), -- Staff who performed check-in
+    checked_out_by INT REFERENCES users(id), -- Staff who performed check-out
+    notes TEXT, -- Internal staff notes
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -125,9 +131,28 @@ INSERT INTO products (category_id, name, price, pricing_unit, time_slot, invento
 
 -- Amenities
 ((SELECT id FROM cats WHERE name='Amenities'), 'Horseback Ride', 50.00, 'fixed', 'day', 10, 1),
-((SELECT id FROM cats WHERE name='Amenities'), 'Cave Tour', 50.00, 'per_head', 'day', 100, 1);
+((SELECT id FROM cats WHERE name='Amenities'), 'Cave Tour', 50.00, 'per_head', 'day', 100, 1)
+ON CONFLICT (name) DO NOTHING;
 
--- Insert Admin User (Same as before)
-INSERT INTO users (email, password, first_name, last_name, role) 
-VALUES ('admin@alfarm.com', '$2a$10$rF9Qn4fJPVjJZ.xJZKVpUeN8qPX5h3x5J7ZGqX5X5X5X5X5X5X5Xu', 'Admin', 'User', 'root')
+-- Audit Logs Table (Phase 3)
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id BIGSERIAL PRIMARY KEY,
+    actor_user_id INT REFERENCES users(id), -- Staff who performed the action
+    actor_email VARCHAR(255) NOT NULL, -- Redundant for audit trail even if user deleted
+    action VARCHAR(100) NOT NULL, -- e.g., 'booking.checkin', 'staff.create', 'payment.collect'
+    entity_type VARCHAR(50) NOT NULL, -- e.g., 'booking', 'user', 'payment'
+    entity_id VARCHAR(50) NOT NULL, -- ID of the affected entity
+    metadata JSONB, -- Before/after snapshots, IP, user-agent, notes
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Audit log indexes
+CREATE INDEX idx_audit_logs_actor ON audit_logs(actor_user_id);
+CREATE INDEX idx_audit_logs_action ON audit_logs(action);
+CREATE INDEX idx_audit_logs_entity ON audit_logs(entity_type, entity_id);
+CREATE INDEX idx_audit_logs_created ON audit_logs(created_at);
+
+-- Insert Admin User (super_admin role)
+INSERT INTO users (email, password, first_name, last_name, role, is_active) 
+VALUES ('admin@alfarm.com', '$2a$10$9q8MwwhZLgSkoI.sPQZh8eH/o1XEyxfrCk.iL9.xQgsCLvaGJ31ei', 'Admin', 'User', 'super_admin', true)
 ON CONFLICT (email) DO NOTHING;

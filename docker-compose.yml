@@ -1,0 +1,101 @@
+# =============================================================================
+# AlFarm Resort - Docker Compose Configuration
+# Production deployment for DigitalOcean Droplet
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database
+  # ---------------------------------------------------------------------------
+  db:
+    image: postgres:15-alpine
+    container_name: alfarm_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-alfarm}
+      POSTGRES_USER: ${POSTGRES_USER:-alfarm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Database password required}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database:/docker-entrypoint-initdb.d:ro
+    # SECURITY: Do NOT expose postgres publicly
+    # Use SSH tunnel if you need external access
+    # ports:
+    #   - "127.0.0.1:5432:5432"
+    networks:
+      - alfarm_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-alfarm} -d ${POSTGRES_DB:-alfarm}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # Next.js Web Application
+  # ---------------------------------------------------------------------------
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: alfarm_web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      # Database connection (uses docker network hostname)
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-alfarm}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Database password required}
+      DB_NAME: ${POSTGRES_DB:-alfarm}
+      # Security
+      JWT_SECRET: ${JWT_SECRET:?JWT secret required}
+      # Application URL
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      # Email (optional)
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASSWORD:-${SMTP_PASS:-}}
+      SMTP_FROM: ${SMTP_FROM:-}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - alfarm_network
+
+  # ---------------------------------------------------------------------------
+  # Nginx Reverse Proxy (Optional - uncomment to enable)
+  # ---------------------------------------------------------------------------
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: alfarm_nginx
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./nginx/ssl:/etc/nginx/ssl:ro
+  #   depends_on:
+  #     - web
+  #   networks:
+  #     - alfarm_network
+
+# -----------------------------------------------------------------------------
+# Networks
+# -----------------------------------------------------------------------------
+networks:
+  alfarm_network:
+    driver: bridge
+
+# -----------------------------------------------------------------------------
+# Volumes
+# -----------------------------------------------------------------------------
+volumes:
+  pgdata:
+    driver: local

@@ -1,30 +1,99 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import pool from '@/lib/db';
+import { checkRateLimit, RateLimitPresets } from '@/lib/rateLimit';
+import { ErrorResponses, handleUnexpectedError } from '@/lib/apiErrors';
 
+/**
+ * Zod schema for availability query parameters
+ */
+const AvailabilityQuerySchema = z.object({
+  check_in: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format (YYYY-MM-DD)'),
+  check_out: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format (YYYY-MM-DD)').optional(),
+  type: z.enum(['day', 'overnight']).default('day'),
+  time_slot: z.enum(['day', 'night', 'any']).optional(),
+}).refine(
+  (data) => {
+    // Overnight bookings must have check_out
+    if (data.type === 'overnight') {
+      return !!data.check_out;
+    }
+    return true;
+  },
+  {
+    message: 'check_out parameter is required for overnight bookings',
+    path: ['check_out'],
+  }
+).refine(
+  (data) => {
+    // Check-out must be after check-in
+    if (data.check_out) {
+      return new Date(data.check_out) > new Date(data.check_in);
+    }
+    return true;
+  },
+  {
+    message: 'check_out must be after check_in',
+    path: ['check_out'],
+  }
+);
+
+/**
+ * GET /api/availability
+ * Check real-time product availability for date range
+ * 
+ * FEATURES:
+ * - Rate limiting prevents abuse
+ * - Zod validation for query parameters
+ * - Standardized error responses
+ * - NO LOGIC CHANGES to existing date overlap calculation
+ */
 export async function GET(request: NextRequest) {
+  // ============================================
+  // RATE LIMITING
+  // ============================================
+  const rateLimitResponse = checkRateLimit(
+    request,
+    RateLimitPresets.availability.limit,
+    RateLimitPresets.availability.windowMs
+  );
+  
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
+  // ============================================
+  // INPUT VALIDATION (Zod)
+  // ============================================
+  const searchParams = request.nextUrl.searchParams;
+  const rawQuery = {
+    check_in: searchParams.get('check_in') || searchParams.get('date'),
+    check_out: searchParams.get('check_out') || undefined,
+    type: searchParams.get('type') || 'day',
+    time_slot: searchParams.get('time_slot') || undefined,
+  };
+
+  let query: z.infer<typeof AvailabilityQuerySchema>;
+  
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const checkInStr = searchParams.get('check_in') || searchParams.get('date'); // YYYY-MM-DD
-    const checkOutStr = searchParams.get('check_out'); // YYYY-MM-DD (optional, for overnight)
-    const bookingType = searchParams.get('type') || 'day'; // 'day' or 'overnight'
-    const timeSlot = searchParams.get('time_slot'); // 'day' or 'night'
-
-    if (!checkInStr) {
-      return NextResponse.json(
-        { error: 'check_in (or date) parameter is required' },
-        { status: 400 }
+    query = AvailabilityQuerySchema.parse(rawQuery);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return ErrorResponses.validationError(
+        'Invalid query parameters',
+        error.issues
       );
     }
+    return ErrorResponses.validationError('Invalid request parameters');
+  }
 
-    // For overnight bookings, check_out is required
-    if (bookingType === 'overnight' && !checkOutStr) {
-      return NextResponse.json(
-        { error: 'check_out parameter is required for overnight bookings' },
-        { status: 400 }
-      );
-    }
+  const { check_in: checkInStr, check_out: checkOutStr, type: bookingType, time_slot: timeSlot } = query;
 
-    // 1. Get all active products, filtered by time_slot if provided
+  try {
+
+    // ============================================
+    // STEP 1: GET ACTIVE PRODUCTS
+    // ============================================
     let productsQuery = `
       SELECT 
         p.id, 
@@ -48,9 +117,10 @@ export async function GET(request: NextRequest) {
     const productsResult = await pool.query(productsQuery, productParams);
     const allProducts = productsResult.rows;
 
-    // 2. Get Bookings that overlap with the requested date range
-    // For day-use: check single date match
-    // For overnight: check date range overlap using: (start1 < end2) AND (end1 > start2)
+    // ============================================
+    // STEP 2: GET OVERLAPPING BOOKINGS
+    // NO LOGIC CHANGES - preserving existing date overlap calculation
+    // ============================================
     let bookingsQuery: string;
     let bookingParams: any[];
 
@@ -99,7 +169,9 @@ export async function GET(request: NextRequest) {
       bookedMap.set(row.product_id, parseInt(row.booked_qty));
     });
 
-    // 3. Calculate Availability
+    // ============================================
+    // STEP 3: CALCULATE AVAILABILITY
+    // ============================================
     const availability = allProducts.map(product => {
       const total = product.inventory_count;
       const booked = bookedMap.get(product.id) || 0;
@@ -126,10 +198,6 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Availability check error:', error);
-    return NextResponse.json(
-      { error: 'Failed to check availability' },
-      { status: 500 }
-    );
+    return handleUnexpectedError(error);
   }
 }

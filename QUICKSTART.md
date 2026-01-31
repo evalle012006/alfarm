@@ -2,6 +2,9 @@
 
 Get up and running in 10 minutes!
 
+> **Last Updated:** January 2026  
+> **Version:** 1.1 (Phase 3.5 - Deployment & Operations Hardening)
+
 ## Prerequisites Check
 
 - [ ] Node.js 18+ installed
@@ -70,7 +73,8 @@ DB_USER=postgres
 DB_PASSWORD=YOUR_POSTGRES_PASSWORD
 DB_NAME=alfarm_resort
 
-# JWT Secret (Change this in production!)
+# JWT Secret (REQUIRED in production - app will not start without it!)
+# Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 
 # Email Configuration (Mailtrap for testing)
@@ -118,6 +122,24 @@ The application is now running with:
 - ✅ Booking system with date-range support
 - ✅ Step-based checkout flow (Select → Details → Payment → Confirmation)
 - ✅ Email notifications (if Mailtrap configured)
+- ✅ **Rate limiting** on public APIs (prevents abuse)
+- ✅ **Row-level locking** (prevents overselling)
+- ✅ **Zod validation** (input validation on all endpoints)
+- ✅ **Standardized error responses** (consistent API errors)
+- ✅ **RBAC permission system** (granular role-based access)
+- ✅ **Audit logging** (tracks all admin actions)
+- ✅ **Staff management** (create/manage staff accounts)
+- ✅ **Check-in/Check-out** (operational booking management)
+
+### User Roles
+| Role | Description | Permissions |
+|------|-------------|-------------|
+| `guest` | Public customers | Default for registrations |
+| `cashier` | Front desk staff | Bookings, check-in/out, payments |
+| `super_admin` | Full administrator | All permissions + staff management |
+| `admin`/`root` | Legacy admin roles | Full admin access |
+
+> Role constants and permissions are defined in `lib/roles.ts` and `lib/permissions.ts`.
 
 ## 🎯 What to Do Next
 
@@ -138,7 +160,9 @@ The application is now running with:
 3. **Test Admin Features**
    - Login as admin at `/admin/login`
    - View protected dashboard
-   - Manage bookings via API
+   - Manage bookings at `/admin/bookings`
+   - Manage staff at `/admin/staff` (super_admin only)
+   - View audit logs at `/admin/audit` (super_admin only)
 
 4. **Create a Guest Account**
    - Register at `/guest/register`
@@ -182,6 +206,52 @@ npm run dev -- -p 3001
 - Check that `.env.local` is configured correctly
 - Ensure database connection works
 - Check browser console for error messages
+- **Important:** Login requires POST method with `{"email", "password", "role"}` in body
+
+**Getting 429 Too Many Requests?**
+- Rate limiting is enabled: 60 req/min on `/api/availability`, 10 req/min on `/api/bookings`
+- Wait for the rate limit window to reset (check `Retry-After` header)
+
+**JWT_SECRET warning in console?**
+- Set `JWT_SECRET` in `.env.local` to suppress the warning
+- In production, the app will **not start** without `JWT_SECRET`
+
+## 🐳 Docker Deployment (Production)
+
+For production deployment using Docker:
+
+```bash
+# Copy production environment template
+cp .env.production.example .env
+
+# Edit .env with your production values
+# IMPORTANT: Generate a secure JWT_SECRET!
+openssl rand -base64 32
+
+# Build and start
+docker compose up -d --build
+
+# Check status
+docker compose ps
+
+# View logs
+docker compose logs -f web
+```
+
+### Database Management
+
+```bash
+# Initialize database (first time only)
+./scripts/db-init.sh
+
+# Create backup
+./scripts/db-backup.sh
+
+# Restore from backup
+./scripts/db-restore.sh backups/alfarm_YYYYMMDD_HHMMSS.dump
+```
+
+📖 **Full deployment guide:** [docs/deployment-droplet-docker.md](docs/deployment-droplet-docker.md)
 
 ## 📚 Need More Help?
 
@@ -190,6 +260,17 @@ Check the full README.md for:
 - Complete feature list
 - API documentation
 - Deployment guide
+
+## 🔒 Security Notes
+
+- **JWT_SECRET**: Required in production. App throws fatal error if missing.
+- **Rate Limiting**: Public APIs are protected (availability: 60/min, bookings: 10/min)
+- **Row-Level Locking**: Prevents concurrent bookings from overselling inventory
+- **Input Validation**: All endpoints use Zod schemas for payload validation
+- **Password Hashing**: bcrypt with cost factor 10
+- **RBAC**: Granular permission system for admin operations
+- **Audit Logging**: All admin mutations are logged with actor, action, and metadata
+- **Secure Cookies**: HttpOnly, Secure (in production), SameSite=Lax
 
 ---
 

@@ -16,7 +16,7 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string, role?: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (data: RegisterData) => Promise<{ success: boolean; error?: string; claimed?: boolean }>;
   logout: () => void;
   updateUser: (user: User) => void;
@@ -59,22 +59,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
+  /**
+   * Guest login - stores token in localStorage
+   * NOTE: Role is determined by server from database, not client
+   */
   const login = async (
     email: string, 
-    password: string, 
-    role: string = 'guest'
+    password: string
   ): Promise<{ success: boolean; error?: string }> => {
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, role }),
+        body: JSON.stringify({ email, password }),
+        // NOTE: role is NOT sent - server determines from DB
       });
 
       const data = await response.json();
 
       if (!response.ok) {
         return { success: false, error: data.error || 'Login failed' };
+      }
+
+      // Guest login returns token in body
+      // Admin login returns { ok: true } with cookie (handled separately)
+      if (!data.token) {
+        // This is an admin account trying to use guest login
+        return { success: false, error: 'Please use admin login' };
       }
 
       // Store auth data

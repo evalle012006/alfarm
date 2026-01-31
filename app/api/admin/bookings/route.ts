@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import { requireRole } from '@/lib/authMiddleware';
+import { requirePermission } from '@/lib/rbac';
+import { handleUnexpectedError } from '@/lib/apiErrors';
 
 // GET - List all bookings (admin only)
 export async function GET(request: NextRequest) {
-  const { response, user } = requireRole(request, ['admin', 'root']);
-  if (response) return response;
+  // RBAC: Require bookings:read permission
+  const check = await requirePermission(request, 'bookings:read');
+  if (!check.authorized) return check.response;
 
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -148,8 +150,9 @@ export async function GET(request: NextRequest) {
 
 // POST - Create booking (admin can create on behalf of guests)
 export async function POST(request: NextRequest) {
-  const { response, user } = requireRole(request, ['admin', 'root']);
-  if (response) return response;
+  // RBAC: Require bookings:create permission
+  const check = await requirePermission(request, 'bookings:create');
+  if (!check.authorized) return check.response;
 
   const client = await pool.connect();
 

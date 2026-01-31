@@ -35,5 +35,9 @@ next-env.d.ts
 
 # Database
 *.sql.backup
+/backups/
+
+# Docker
+.docker/
 
 /temp_docs

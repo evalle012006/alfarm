@@ -158,7 +158,7 @@ export default function StaffManagement() {
         )}
 
         {/* Filters */}
-        <div className="bg-white dark:bg-accent-dark rounded-lg shadow p-4 mb-6">
+        <div className="bg-white dark:bg-slate-900 rounded-lg shadow p-4 mb-6 border border-gray-200 dark:border-slate-800">
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
@@ -171,7 +171,7 @@ export default function StaffManagement() {
         </div>
 
         {/* Staff Table */}
-        <div className="bg-white dark:bg-accent-dark rounded-lg shadow overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-lg shadow overflow-hidden border border-gray-200 dark:border-slate-800">
           {loading ? (
             <div className="p-8 text-center">
               <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
@@ -309,7 +309,7 @@ function CreateStaffModal({ onClose, onSuccess }: { onClose: () => void; onSucce
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-accent-dark rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+      <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl max-w-md w-full mx-4 p-6 border border-gray-200 dark:border-slate-800">
         <h2 className="text-xl font-bold mb-4">Create Staff Account</h2>
         
         {error && (

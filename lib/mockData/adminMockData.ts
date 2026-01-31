@@ -13,13 +13,18 @@ export interface MockBooking {
 }
 
 export interface MockProduct {
-    id: string;
+    id: number;
     name: string;
-    type: 'room' | 'day-use' | 'add-on';
+    category_id: number;
+    category_name: string;
     description: string;
-    capacity: string;
-    pricePerNight: number;
-    available: boolean;
+    capacity: number;
+    price: number;
+    pricing_unit: 'fixed' | 'per_head' | 'per_hour' | 'per_night';
+    time_slot: 'day' | 'night' | 'any';
+    inventory_count: number;
+    image_url: string | null;
+    is_active: boolean;
 }
 
 export const mockBookings: MockBooking[] = [
@@ -137,93 +142,171 @@ export const mockBookings: MockBooking[] = [
 
 export const mockProducts: MockProduct[] = [
     {
-        id: 'PROD-001',
-        name: 'Standard Room',
-        type: 'room',
-        description: 'Comfortable and cozy room perfect for couples',
-        capacity: '2 Adults',
-        pricePerNight: 1500,
-        available: true
+        id: 1,
+        name: 'Adult Entrance (Day)',
+        category_id: 1,
+        category_name: 'Entrance Fee',
+        description: 'Day tour access for adults',
+        capacity: 1,
+        price: 60,
+        pricing_unit: 'per_head',
+        time_slot: 'day',
+        inventory_count: 1000,
+        image_url: null,
+        is_active: true
     },
     {
-        id: 'PROD-002',
-        name: 'Deluxe Suite',
-        type: 'room',
-        description: 'Spacious suite with premium amenities',
-        capacity: '4 Adults',
-        pricePerNight: 4000,
-        available: true
+        id: 2,
+        name: 'Kid Entrance (Day)',
+        category_id: 1,
+        category_name: 'Entrance Fee',
+        description: 'Day tour access for kids',
+        capacity: 1,
+        price: 30,
+        pricing_unit: 'per_head',
+        time_slot: 'day',
+        inventory_count: 1000,
+        image_url: null,
+        is_active: true
     },
     {
-        id: 'PROD-003',
-        name: 'Private Villa',
-        type: 'room',
-        description: 'Exclusive villa with full privacy',
-        capacity: '8 Adults',
-        pricePerNight: 6500,
-        available: true
+        id: 3,
+        name: 'Poolside Table',
+        category_id: 2,
+        category_name: 'Accommodation',
+        description: 'Table by the pool for day use',
+        capacity: 4,
+        price: 300,
+        pricing_unit: 'fixed',
+        time_slot: 'day',
+        inventory_count: 10,
+        image_url: null,
+        is_active: true
     },
     {
-        id: 'PROD-004',
+        id: 4,
+        name: 'Screen Cottage (Small)',
+        category_id: 2,
+        category_name: 'Accommodation',
+        description: 'Small screened cottage for day use',
+        capacity: 15,
+        price: 400,
+        pricing_unit: 'fixed',
+        time_slot: 'day',
+        inventory_count: 5,
+        image_url: null,
+        is_active: true
+    },
+    {
+        id: 5,
         name: 'Open Kubo',
-        type: 'day-use',
+        category_id: 2,
+        category_name: 'Accommodation',
         description: 'Traditional Filipino cottage for day use',
-        capacity: '10 Persons',
-        pricePerNight: 3500,
-        available: true
+        capacity: 10,
+        price: 300,
+        pricing_unit: 'fixed',
+        time_slot: 'day',
+        inventory_count: 8,
+        image_url: null,
+        is_active: true
     },
     {
-        id: 'PROD-005',
-        name: 'Pavilion Rental',
-        type: 'day-use',
-        description: 'Large pavilion for events and gatherings',
-        capacity: '20 Persons',
-        pricePerNight: 2500,
-        available: true
+        id: 6,
+        name: 'Duplex Room (Fan)',
+        category_id: 2,
+        category_name: 'Accommodation',
+        description: 'Overnight room with fan',
+        capacity: 2,
+        price: 1100,
+        pricing_unit: 'per_night',
+        time_slot: 'night',
+        inventory_count: 4,
+        image_url: null,
+        is_active: true
     },
     {
-        id: 'PROD-006',
-        name: 'Picnic Table',
-        type: 'day-use',
-        description: 'Outdoor picnic table with shade',
-        capacity: '6 Persons',
-        pricePerNight: 500,
-        available: true
+        id: 7,
+        name: 'Duplex Room (AC)',
+        category_id: 2,
+        category_name: 'Accommodation',
+        description: 'Overnight room with air conditioning',
+        capacity: 2,
+        price: 1300,
+        pricing_unit: 'per_night',
+        time_slot: 'night',
+        inventory_count: 4,
+        image_url: null,
+        is_active: true
     },
     {
-        id: 'PROD-007',
-        name: 'Bonfire Kit',
-        type: 'add-on',
-        description: 'Complete bonfire setup with firewood',
-        capacity: 'N/A',
-        pricePerNight: 800,
-        available: true
+        id: 8,
+        name: 'Orange Terrace',
+        category_id: 2,
+        category_name: 'Accommodation',
+        description: 'Large terrace for groups',
+        capacity: 15,
+        price: 4200,
+        pricing_unit: 'per_night',
+        time_slot: 'night',
+        inventory_count: 1,
+        image_url: null,
+        is_active: true
     },
     {
-        id: 'PROD-008',
-        name: 'BBQ Grill Set',
-        type: 'add-on',
-        description: 'Grill with charcoal and utensils',
-        capacity: 'N/A',
-        pricePerNight: 600,
-        available: true
+        id: 9,
+        name: 'Shorts',
+        category_id: 4,
+        category_name: 'Rentals',
+        description: 'Swimming shorts rental',
+        capacity: 0,
+        price: 50,
+        pricing_unit: 'fixed',
+        time_slot: 'any',
+        inventory_count: 50,
+        image_url: null,
+        is_active: true
     },
     {
-        id: 'PROD-009',
-        name: 'Karaoke System',
-        type: 'add-on',
-        description: 'Professional karaoke system rental',
-        capacity: 'N/A',
-        pricePerNight: 1200,
-        available: false
+        id: 10,
+        name: 'Horseback Ride',
+        category_id: 3,
+        category_name: 'Amenities',
+        description: 'Horseback riding experience',
+        capacity: 1,
+        price: 50,
+        pricing_unit: 'fixed',
+        time_slot: 'day',
+        inventory_count: 10,
+        image_url: null,
+        is_active: true
     },
     {
-        id: 'PROD-010',
-        name: 'Family Room',
-        type: 'room',
-        description: 'Large room perfect for families',
-        capacity: '6 Adults',
-        pricePerNight: 3500,
-        available: true
+        id: 11,
+        name: 'Cave Tour',
+        category_id: 3,
+        category_name: 'Amenities',
+        description: 'Guided cave exploration tour',
+        capacity: 1,
+        price: 50,
+        pricing_unit: 'per_head',
+        time_slot: 'day',
+        inventory_count: 100,
+        image_url: null,
+        is_active: true
+    },
+    {
+        id: 12,
+        name: 'Function Hall',
+        category_id: 2,
+        category_name: 'Accommodation',
+        description: 'Large hall for events and gatherings',
+        capacity: 30,
+        price: 3000,
+        pricing_unit: 'fixed',
+        time_slot: 'day',
+        inventory_count: 1,
+        image_url: null,
+        is_active: false
     }
 ];

@@ -113,7 +113,7 @@ export default function AdminLogin() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
                 Password
               </label>
               <input
@@ -134,14 +134,6 @@ export default function AdminLogin() {
               {loading ? 'Logging in...' : 'Login to Dashboard'}
             </button>
           </form>
-
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <div className="text-center text-sm text-gray-600 dark:text-white">
-              <p className="mb-2">Default credentials for testing:</p>
-              <p className="font-mono bg-gray-100 p-2 rounded">admin@alfarm.com</p>
-              <p className="font-mono bg-gray-100 p-2 rounded mt-1">admin123</p>
-            </div>
-          </div>
 
           <div className="mt-6 text-center">
             <Link href="/" className="text-primary hover:underline">

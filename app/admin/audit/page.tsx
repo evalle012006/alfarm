@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -38,16 +38,6 @@ export default function AuditLogs() {
 
   const canReadAudit = permissions === '*' || permissions.includes('audit:read');
 
-  useEffect(() => {
-    fetchPermissions();
-  }, []);
-
-  useEffect(() => {
-    if (canReadAudit) {
-      fetchLogs();
-    }
-  }, [canReadAudit, filters, pagination.offset]);
-
   async function fetchPermissions() {
     try {
       const response = await fetch('/api/admin/me', { credentials: 'include' });
@@ -62,7 +52,7 @@ export default function AuditLogs() {
     }
   }
 
-  async function fetchLogs() {
+  const fetchLogs = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
@@ -89,12 +79,22 @@ export default function AuditLogs() {
         total: data.pagination.total,
         hasMore: data.pagination.hasMore,
       }));
-    } catch (err) {
+    } catch {
       setError('Failed to load audit logs');
     } finally {
       setLoading(false);
     }
-  }
+  }, [filters, pagination.limit, pagination.offset]);
+
+  useEffect(() => {
+    fetchPermissions();
+  }, []);
+
+  useEffect(() => {
+    if (canReadAudit) {
+      fetchLogs();
+    }
+  }, [canReadAudit, fetchLogs]);
 
   function formatDate(dateString: string) {
     return new Date(dateString).toLocaleString();
@@ -143,7 +143,7 @@ export default function AuditLogs() {
         )}
 
         {/* Filters */}
-        <div className="bg-white dark:bg-accent-dark rounded-lg shadow p-4 mb-6">
+        <div className="bg-white dark:bg-slate-900 rounded-lg shadow p-4 mb-6 border border-gray-200 dark:border-slate-800">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1">Action</label>
@@ -213,7 +213,7 @@ export default function AuditLogs() {
         </div>
 
         {/* Logs Table */}
-        <div className="bg-white dark:bg-accent-dark rounded-lg shadow overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-lg shadow overflow-hidden border border-gray-200 dark:border-slate-800">
           {loading ? (
             <div className="p-8 text-center">
               <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>

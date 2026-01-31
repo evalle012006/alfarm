@@ -51,10 +51,28 @@ export async function POST(request: NextRequest) {
     const normalizedEmail = email.toLowerCase().trim();
 
     // Get user from database by email only (no role filter)
-    const result = await pool.query(
-      'SELECT id, email, password, first_name, last_name, phone, role, is_active FROM users WHERE LOWER(email) = $1',
-      [normalizedEmail]
-    );
+    // Note: is_active column may not exist in older schemas - query without it first
+    let result;
+    try {
+      result = await pool.query(
+        'SELECT id, email, password, first_name, last_name, phone, role, is_active FROM users WHERE LOWER(email) = $1',
+        [normalizedEmail]
+      );
+    } catch (err: unknown) {
+      // Fallback for databases without is_active column
+      if (err instanceof Error && err.message.includes('is_active')) {
+        result = await pool.query(
+          'SELECT id, email, password, first_name, last_name, phone, role FROM users WHERE LOWER(email) = $1',
+          [normalizedEmail]
+        );
+        // Add is_active = true for backward compatibility
+        if (result.rows.length > 0) {
+          result.rows[0].is_active = true;
+        }
+      } else {
+        throw err;
+      }
+    }
 
     if (result.rows.length === 0) {
       // Generic error - don't reveal if user exists

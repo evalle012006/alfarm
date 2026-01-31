@@ -1,30 +1,58 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Modal from './Modal';
 
 interface ProductModalProps {
     isOpen: boolean;
     onClose: () => void;
     product?: {
-        id: string;
+        id: number;
         name: string;
-        type: string;
+        category_id: number;
+        category_name: string;
         description: string;
-        capacity: string;
-        pricePerNight: number;
+        capacity: number;
+        price: number;
+        pricing_unit: string;
+        time_slot: string;
+        inventory_count: number;
+        image_url: string | null;
+        is_active: boolean;
     } | null;
 }
 
 export default function ProductModal({ isOpen, onClose, product }: ProductModalProps) {
     const [formData, setFormData] = useState({
-        name: product?.name || '',
-        type: product?.type || 'room',
-        description: product?.description || '',
-        capacity: product?.capacity || '',
-        pricePerNight: product?.pricePerNight || 0,
-        imageUrl: ''
+        name: '',
+        category_id: 1,
+        description: '',
+        capacity: 0,
+        price: 0,
+        pricing_unit: 'fixed',
+        time_slot: 'any',
+        inventory_count: 1,
+        image_url: '',
+        is_active: true
     });
+
+    // Reset form when product changes or modal opens
+    useEffect(() => {
+        if (isOpen) {
+            setFormData({
+                name: product?.name || '',
+                category_id: product?.category_id || 1,
+                description: product?.description || '',
+                capacity: product?.capacity || 0,
+                price: product?.price || 0,
+                pricing_unit: product?.pricing_unit || 'fixed',
+                time_slot: product?.time_slot || 'any',
+                inventory_count: product?.inventory_count || 1,
+                image_url: product?.image_url || '',
+                is_active: product?.is_active ?? true
+            });
+        }
+    }, [isOpen, product]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -56,20 +84,21 @@ export default function ProductModal({ isOpen, onClose, product }: ProductModalP
                     />
                 </div>
 
-                {/* Type */}
+                {/* Category */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Product Type *
+                        Category *
                     </label>
                     <select
                         required
-                        value={formData.type}
-                        onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                        value={formData.category_id}
+                        onChange={(e) => setFormData({ ...formData, category_id: Number(e.target.value) })}
                         className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                     >
-                        <option value="room">Room</option>
-                        <option value="day-use">Day Use</option>
-                        <option value="add-on">Add-on</option>
+                        <option value={1}>Entrance Fee</option>
+                        <option value={2}>Accommodation</option>
+                        <option value={3}>Amenities</option>
+                        <option value={4}>Rentals</option>
                     </select>
                 </div>
 
@@ -88,35 +117,110 @@ export default function ProductModal({ isOpen, onClose, product }: ProductModalP
                     />
                 </div>
 
-                {/* Capacity and Price */}
+                {/* Price and Pricing Unit */}
                 <div className="grid md:grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Capacity *
-                        </label>
-                        <input
-                            type="text"
-                            required
-                            value={formData.capacity}
-                            onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
-                            className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                            placeholder="e.g., 4 Adults"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Price per Night *
+                            Price (₱) *
                         </label>
                         <input
                             type="number"
                             required
                             min="0"
-                            value={formData.pricePerNight}
-                            onChange={(e) => setFormData({ ...formData, pricePerNight: Number(e.target.value) })}
+                            step="0.01"
+                            value={formData.price}
+                            onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
                             className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                             placeholder="0"
                         />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Pricing Unit *
+                        </label>
+                        <select
+                            required
+                            value={formData.pricing_unit}
+                            onChange={(e) => setFormData({ ...formData, pricing_unit: e.target.value })}
+                            className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                        >
+                            <option value="fixed">Fixed</option>
+                            <option value="per_head">Per Head</option>
+                            <option value="per_hour">Per Hour</option>
+                            <option value="per_night">Per Night</option>
+                        </select>
+                    </div>
+                </div>
+
+                {/* Time Slot and Capacity */}
+                <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Time Slot *
+                        </label>
+                        <select
+                            required
+                            value={formData.time_slot}
+                            onChange={(e) => setFormData({ ...formData, time_slot: e.target.value })}
+                            className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                        >
+                            <option value="day">Day</option>
+                            <option value="night">Night</option>
+                            <option value="any">Any</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Capacity
+                        </label>
+                        <input
+                            type="number"
+                            min="0"
+                            value={formData.capacity}
+                            onChange={(e) => setFormData({ ...formData, capacity: Number(e.target.value) })}
+                            className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                            placeholder="0 for N/A"
+                        />
+                    </div>
+                </div>
+
+                {/* Inventory and Status */}
+                <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Inventory Count *
+                        </label>
+                        <input
+                            type="number"
+                            required
+                            min="1"
+                            value={formData.inventory_count}
+                            onChange={(e) => setFormData({ ...formData, inventory_count: Number(e.target.value) })}
+                            className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                            placeholder="1"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Status
+                        </label>
+                        <div className="flex items-center h-[50px]">
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={formData.is_active}
+                                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                                    className="sr-only peer"
+                                />
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/30 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                                <span className="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
+                                    {formData.is_active ? 'Active' : 'Inactive'}
+                                </span>
+                            </label>
+                        </div>
                     </div>
                 </div>
 
@@ -127,8 +231,8 @@ export default function ProductModal({ isOpen, onClose, product }: ProductModalP
                     </label>
                     <input
                         type="url"
-                        value={formData.imageUrl}
-                        onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                        value={formData.image_url}
+                        onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                         className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                         placeholder="https://example.com/image.jpg"
                     />

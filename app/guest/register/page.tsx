@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function GuestRegister() {
   const router = useRouter();
+  const { register, isAuthenticated, isLoading } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -16,58 +18,57 @@ export default function GuestRegister() {
     phone: '',
   });
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.push('/guest/dashboard');
+    }
+  }, [isAuthenticated, isLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
 
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters');
       return;
     }
 
     setLoading(true);
 
-    try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          phone: formData.phone,
-          role: 'guest',
-        }),
-      });
+    const result = await register({
+      email: formData.email,
+      password: formData.password,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      phone: formData.phone,
+    });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        router.push('/guest/dashboard');
-      } else {
-        setError(data.error || 'Registration failed');
+    if (result.success) {
+      if (result.claimed) {
+        setSuccess('Account claimed! Your previous bookings are now linked.');
       }
-    } catch (err) {
-      setError('An error occurred. Please try again.');
-    } finally {
-      setLoading(false);
+      setTimeout(() => router.push('/guest/dashboard'), 1000);
+    } else {
+      setError(result.error || 'Registration failed');
     }
+    
+    setLoading(false);
   };
 
   return (
     <div className="min-h-screen hero-gradient py-12 px-4">
       <div className="max-w-md mx-auto">
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 dark:bg-accent-dark dark:text-white">
           {/* Logo and Header */}
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
@@ -80,8 +81,8 @@ export default function GuestRegister() {
                 />
               </div>
             </div>
-            <h2 className="text-3xl font-bold text-accent">Create Account</h2>
-            <p className="text-gray-600 mt-2">Join AlFarm Resort Community</p>
+            <h2 className="text-3xl font-bold text-accent dark:text-white">Create Account</h2>
+            <p className="text-gray-600 mt-2 dark:text-white">Join AlFarm Resort Community</p>
           </div>
 
           {error && (
@@ -90,10 +91,16 @@ export default function GuestRegister() {
             </div>
           )}
 
+          {success && (
+            <div className="bg-green-100 border-2 border-green-400 text-green-700 px-4 py-3 rounded-lg mb-6">
+              {success}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-white">
                   First Name *
                 </label>
                 <input
@@ -121,7 +128,7 @@ export default function GuestRegister() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-white">
                 Email Address *
               </label>
               <input
@@ -154,13 +161,13 @@ export default function GuestRegister() {
               <input
                 type="password"
                 required
-                minLength={6}
+                minLength={8}
                 className="input-field"
                 placeholder="••••••••"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               />
-              <p className="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
+              <p className="text-xs text-gray-500 mt-1 dark:text-white">Minimum 8 characters</p>
             </div>
 
             <div>
@@ -170,7 +177,7 @@ export default function GuestRegister() {
               <input
                 type="password"
                 required
-                minLength={6}
+                minLength={8}
                 className="input-field"
                 placeholder="••••••••"
                 value={formData.confirmPassword}
@@ -188,13 +195,13 @@ export default function GuestRegister() {
           </form>
 
           <div className="mt-6 pt-6 border-t border-gray-200 space-y-3 text-center">
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-white">
               Already have an account?{' '}
               <Link href="/guest/login" className="text-primary hover:underline font-semibold">
                 Login
               </Link>
             </p>
-            <Link href="/" className="block text-gray-600 hover:text-primary">
+            <Link href="/" className="block text-gray-600 hover:text-primary dark:text-white">
               ← Back to Home
             </Link>
           </div>

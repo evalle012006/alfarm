@@ -5,6 +5,12 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 
+/**
+ * Admin Login Page
+ * 
+ * Uses cookie-based authentication (httpOnly cookie set by server).
+ * Does NOT use AuthContext - admin auth is separate from guest auth.
+ */
 export default function AdminLogin() {
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -23,29 +29,52 @@ export default function AdminLogin() {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, role: 'root' }),
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          // NOTE: role is intentionally NOT sent - server determines from DB
+        }),
+        credentials: 'include', // Important: include cookies in request/response
       });
 
       const data = await response.json();
 
-      if (response.ok) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        router.push('/admin/dashboard');
-      } else {
+      if (!response.ok) {
         setError(data.error || 'Login failed');
+        setLoading(false);
+        return;
       }
+
+      // Check if this is an admin login response (has 'ok' field, no 'token' field)
+      if (data.ok && data.user) {
+        // Admin login successful - cookie is set by server
+        // Redirect to dashboard
+        router.push('/admin/dashboard');
+        return;
+      }
+
+      // If we got a token in response, this is a guest account trying to login
+      // Guest accounts should not be able to access admin
+      if (data.token) {
+        setError('Invalid credentials');
+        setLoading(false);
+        return;
+      }
+
+      // Unexpected response
+      setError('Login failed');
     } catch (err) {
-      setError('An error occurred. Please try again.');
-    } finally {
-      setLoading(false);
+      console.error('Login error:', err);
+      setError('Network error. Please try again.');
     }
+    
+    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-accent to-accent-light flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-accent to-accent-light flex items-center justify-center px-4 dark:from-accent-dark dark:to-primary-900">
       <div className="max-w-md w-full">
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 dark:bg-accent-dark dark:text-white">
           {/* Logo and Header */}
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
@@ -58,8 +87,8 @@ export default function AdminLogin() {
                 />
               </div>
             </div>
-            <h2 className="text-3xl font-bold text-accent">Admin Portal</h2>
-            <p className="text-gray-600 mt-2">AlFarm Resort Management</p>
+            <h2 className="text-3xl font-bold text-accent dark:text-white">Admin Portal</h2>
+            <p className="text-gray-600 mt-2 dark:text-white">AlFarm Resort Management</p>
           </div>
 
           {error && (
@@ -70,7 +99,7 @@ export default function AdminLogin() {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-white">
                 Email Address
               </label>
               <input
@@ -84,7 +113,7 @@ export default function AdminLogin() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
                 Password
               </label>
               <input
@@ -105,14 +134,6 @@ export default function AdminLogin() {
               {loading ? 'Logging in...' : 'Login to Dashboard'}
             </button>
           </form>
-
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <div className="text-center text-sm text-gray-600">
-              <p className="mb-2">Default credentials for testing:</p>
-              <p className="font-mono bg-gray-100 p-2 rounded">admin@alfarm.com</p>
-              <p className="font-mono bg-gray-100 p-2 rounded mt-1">admin123</p>
-            </div>
-          </div>
 
           <div className="mt-6 text-center">
             <Link href="/" className="text-primary hover:underline">

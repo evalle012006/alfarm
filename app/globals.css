@@ -24,19 +24,19 @@ body {
 
 @layer components {
   .btn-primary {
-    @apply bg-primary hover:bg-primary-600 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg;
+    @apply bg-primary hover:bg-primary-600 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg dark:bg-primary-500 dark:hover:bg-primary-400;
   }
   
   .btn-secondary {
-    @apply bg-secondary hover:bg-secondary-600 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg;
+    @apply bg-secondary hover:bg-secondary-600 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg dark:bg-secondary-500 dark:hover:bg-secondary-400;
   }
   
   .btn-outline {
-    @apply border-2 border-primary text-primary hover:bg-primary hover:text-white font-semibold px-6 py-3 rounded-lg transition-all duration-300;
+    @apply border-2 border-primary text-primary hover:bg-primary hover:text-white font-semibold px-6 py-3 rounded-lg transition-all duration-300 dark:border-primary-200 dark:text-primary-100 dark:hover:bg-primary-200 dark:hover:text-accent-dark;
   }
   
   .card {
-    @apply bg-white rounded-xl shadow-lg p-6 transition-transform duration-300 hover:scale-105 hover:shadow-xl;
+    @apply bg-white rounded-xl shadow-lg p-6 transition-transform duration-300 hover:scale-105 hover:shadow-xl dark:bg-accent-dark dark:text-white dark:shadow-black/40;
   }
   
   .input-field {
@@ -44,19 +44,19 @@ body {
   }
 
   .section-title {
-    @apply text-4xl md:text-5xl font-bold text-accent mb-4;
+    @apply text-4xl md:text-5xl font-bold text-accent mb-4 dark:text-white;
   }
 
   .section-subtitle {
-    @apply text-xl text-gray-600 mb-8;
+    @apply text-xl text-gray-600 mb-8 dark:text-white;
   }
 
   .hero-gradient {
-    @apply bg-gradient-to-br from-primary/10 via-white to-secondary/10;
+    @apply bg-gradient-to-br from-primary/10 via-white to-secondary/10 dark:from-accent-dark dark:via-slate-950 dark:to-primary-900;
   }
 
   .nature-gradient {
-    @apply bg-gradient-to-r from-primary to-secondary;
+    @apply bg-gradient-to-r from-primary to-secondary dark:from-accent-dark dark:to-primary-800;
   }
 }
 

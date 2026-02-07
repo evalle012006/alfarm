@@ -45,6 +45,9 @@ export default function BookingCheckoutPage() {
   }, [state.bookingType, state.checkInDate, state.checkOutDate]);
 
   useEffect(() => {
+    // Skip guards after successful booking (redirect is in progress)
+    if (bookingSuccess) return;
+
     // Guard: require previous steps
     if (!state.checkInDate) {
       router.push('/');
@@ -65,7 +68,7 @@ export default function BookingCheckoutPage() {
       router.push('/booking/info');
       return;
     }
-  }, [cartItems.length, router, state.bookingType, state.checkInDate, state.checkOutDate, state.guestInfo]);
+  }, [bookingSuccess, cartItems.length, router, state.bookingType, state.checkInDate, state.checkOutDate, state.guestInfo]);
 
   useEffect(() => {
     async function fetchProducts() {
@@ -204,16 +207,13 @@ export default function BookingCheckoutPage() {
 
       setConfirmation({ bookingId: data.booking_id, totalAmount: data.total_amount });
 
-      // Show success state
       setBookingSuccess(true);
       setShowConfirmModal(false);
 
-      // Redirect after brief success animation
+      // Immediate redirect to success page
       const successBookingId = data.booking_id;
-      setTimeout(() => {
-        reset({ keepSearch: true });
-        router.push(`/booking/success/${successBookingId}`);
-      }, 1500);
+      reset({ keepSearch: true });
+      router.push(`/booking/success/${successBookingId}`);
     } catch (err) {
       setNotification({
         show: true,
@@ -681,37 +681,19 @@ export default function BookingCheckoutPage() {
         </div>
       )}
 
-      {/* Success State */}
+      {/* Success Toast */}
       {bookingSuccess && (
-        <div className="fixed inset-0 bg-gradient-to-br from-primary/90 to-secondary/90 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-          <div className="text-center animate-bounceIn">
-            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl">
-              <svg
-                className="w-12 h-12 text-secondary"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={3}
-                  d="M5 13l4 4L19 7"
-                />
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 animate-fadeIn">
+          <div className="flex items-center gap-3 bg-white border border-green-200 shadow-xl rounded-xl px-6 py-4">
+            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-4xl font-bold text-white mb-3">Booking Confirmed!</h2>
-            <p className="text-xl text-white/90 mb-2">Your reservation has been placed successfully.</p>
-            <p className="text-white/75 mb-6">Redirecting to your booking details...</p>
-            <button
-              onClick={() => {
-                reset({ keepSearch: true });
-                router.push(`/booking/success/${state.lastBookingId}`);
-              }}
-              className="px-8 py-3 rounded-xl bg-white text-primary font-semibold hover:bg-white/90 transition-all duration-200 shadow-lg"
-            >
-              View Booking Details →
-            </button>
+            <div>
+              <p className="font-semibold text-gray-900">Booking Confirmed!</p>
+              <p className="text-sm text-gray-500">Redirecting to your booking details...</p>
+            </div>
           </div>
         </div>
       )}

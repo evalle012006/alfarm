@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { randomUUID } from 'crypto';
 import pool from '@/lib/db';
 import { sendBookingConfirmationEmail } from '@/lib/email';
 import { checkRateLimit, RateLimitPresets } from '@/lib/rateLimit';
@@ -28,6 +29,8 @@ const BookingPayloadSchema = z.object({
   booking_time: z.string().optional().nullable(),
   guest_info: GuestInfoSchema,
   items: z.array(BookingItemSchema).min(1, 'At least one item is required'),
+  special_requests: z.string().max(1000).optional().nullable(),
+  payment_method: z.enum(['cash', 'gcash', 'paymaya']).default('cash'),
 }).refine(
   (data) => {
     // Overnight bookings must have check_out_date
@@ -133,7 +136,9 @@ export async function POST(request: NextRequest) {
     check_out_date,
     booking_time,
     booking_type,
-    items 
+    items,
+    special_requests,
+    payment_method,
   } = body;
 
   // ============================================
@@ -262,13 +267,15 @@ export async function POST(request: NextRequest) {
     // ============================================
     // STEP 5: CREATE BOOKING HEADER
     // ============================================
+    const qrCodeHash = randomUUID();
+
     const bookingRes = await client.query(
       `INSERT INTO bookings (
         user_id, 
         guest_first_name, guest_last_name, guest_email, guest_phone,
         booking_date, check_out_date, booking_time, booking_type,
-        status, total_amount
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending', 0)
+        status, payment_method, special_requests, qr_code_hash, total_amount
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending', $10, $11, $12, 0)
       RETURNING id`,
       [
         userId,
@@ -279,7 +286,10 @@ export async function POST(request: NextRequest) {
         booking_date,
         check_out_date || null,
         booking_time || null,
-        booking_type
+        booking_type,
+        payment_method,
+        special_requests || null,
+        qrCodeHash,
       ]
     );
     const bookingId = bookingRes.rows[0].id;
@@ -356,7 +366,8 @@ export async function POST(request: NextRequest) {
       check_in: booking_date,
       check_out: check_out_date || null,
       nights: booking_type === 'overnight' ? numNights : null,
-      total_amount: totalAmount
+      total_amount: totalAmount,
+      qr_code_hash: qrCodeHash,
     });
 
   } catch (error) {

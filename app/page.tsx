@@ -16,9 +16,11 @@ import { useBooking } from '@/lib/BookingContext';
 export default function Home() {
   const router = useRouter();
   const { reset, setSearch } = useBooking();
+  const today = new Date().toISOString().split('T')[0];
+  const tomorrow = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; })();
   const [bookingType, setBookingType] = useState('Day-use');
-  const [checkInDate, setCheckInDate] = useState('');
-  const [checkOutDate, setCheckOutDate] = useState('');
+  const [checkInDate, setCheckInDate] = useState(today);
+  const [checkOutDate, setCheckOutDate] = useState(tomorrow);
   const [adults, setAdults] = useState(2);
   const [children, setChildren] = useState(0);
   const [showGuestMenu, setShowGuestMenu] = useState(false);
@@ -33,15 +35,26 @@ export default function Home() {
   // Modal state for feature cards
   const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
 
-  // Constants for Entrance Fees (Should match DB/Offers)
-  const FEES = {
-    DAY: { ADULT: 60, CHILD: 30 },
-    NIGHT: { ADULT: 70, CHILD: 35 }
-  };
+  // Entrance fees fetched from DB
+  const [entranceFees, setEntranceFees] = useState<{
+    day: { adult: { id: number; price: number } | null; child: { id: number; price: number } | null };
+    night: { adult: { id: number; price: number } | null; child: { id: number; price: number } | null };
+  } | null>(null);
+
+  useEffect(() => {
+    fetch('/api/products/entrance-fees')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => { if (data) setEntranceFees(data); })
+      .catch(() => {});
+  }, []);
 
   // Calculate Entrance Fee Estimate
-  const currentFees = bookingType === 'Day-use' ? FEES.DAY : FEES.NIGHT;
-  const estimatedEntranceFee = (adults * currentFees.ADULT) + (children * currentFees.CHILD);
+  const currentFees = entranceFees
+    ? (bookingType === 'Day-use' ? entranceFees.day : entranceFees.night)
+    : null;
+  const adultFee = currentFees?.adult?.price ?? 0;
+  const childFee = currentFees?.child?.price ?? 0;
+  const estimatedEntranceFee = (adults * adultFee) + (children * childFee);
 
   // Close guest menu when clicking outside
   useEffect(() => {
@@ -218,7 +231,14 @@ export default function Home() {
                 <TagToggle
                   options={['Day-use', 'Overnight']}
                   active={bookingType}
-                  onChange={setBookingType}
+                  onChange={(val) => {
+                    setBookingType(val);
+                    if (val === 'Overnight' && checkInDate && (!checkOutDate || checkOutDate <= checkInDate)) {
+                      const nextDay = new Date(checkInDate);
+                      nextDay.setDate(nextDay.getDate() + 1);
+                      setCheckOutDate(nextDay.toISOString().split('T')[0]);
+                    }
+                  }}
                   className="mb-6"
                 />
 
@@ -277,14 +297,14 @@ export default function Home() {
                       <div className="absolute top-full right-0 left-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 p-4 z-50 animate-fadeIn dark:bg-slate-900 dark:border-slate-700">
                         <div className="space-y-4">
                           <CountSelector
-                            label={`Adults (₱${currentFees.ADULT})`}
+                            label={`Adults (₱${adultFee})`}
                             value={adults}
                             min={1}
                             onChange={setAdults}
                             helperText="Ages 13+"
                           />
                           <CountSelector
-                            label={`Children (₱${currentFees.CHILD})`}
+                            label={`Children (₱${childFee})`}
                             value={children}
                             min={0}
                             onChange={setChildren}

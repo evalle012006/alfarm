@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS bookings (
     booking_type VARCHAR(20) DEFAULT 'day' CHECK (booking_type IN ('day', 'overnight')),
     status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'checked_in', 'checked_out', 'completed', 'cancelled')),
     payment_status VARCHAR(20) DEFAULT 'unpaid' CHECK (payment_status IN ('unpaid', 'partial', 'paid', 'voided', 'refunded')),
+    payment_method VARCHAR(20) DEFAULT 'cash' CHECK (payment_method IN ('cash', 'gcash', 'paymaya')),
     total_amount DECIMAL(10, 2) NOT NULL,
     qr_code_hash VARCHAR(255), -- Unique identifier for the QR code
     special_requests TEXT,

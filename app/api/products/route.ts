@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
         p.capacity as "maxCapacity",
         p.description,
         p.pricing_unit,
+        p.time_slot,
         c.name as category_name
       FROM products p
       JOIN categories c ON p.category_id = c.id
@@ -59,7 +60,8 @@ export async function GET(request: NextRequest) {
             capacity: capacity,
             description: row.description || '',
             type: type,
-            category: row.category_name
+            category: row.category_name,
+            time_slot: row.time_slot,
         };
     });
 

@@ -15,7 +15,6 @@ import { getBookingCartItems, useBooking } from '@/lib/BookingContext';
 
 interface GuestInfoForm {
   firstName: string;
-  middleName: string;
   lastName: string;
   email: string;
   phone: string;
@@ -32,7 +31,7 @@ export default function BookingInfoPage() {
   const router = useRouter();
 
   const { user, isAuthenticated } = useAuth();
-  const { state: bookingState, setGuestInfo, setSpecialRequests } = useBooking();
+  const { state: bookingState, setGuestInfo, setSpecialRequests, setSearch } = useBooking();
 
   const bookingType = bookingState.bookingType;
   const checkInDate = bookingState.checkInDate;
@@ -57,7 +56,6 @@ export default function BookingInfoPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [form, setForm] = useState<GuestInfoForm>({
     firstName: '',
-    middleName: '',
     lastName: '',
     email: '',
     phone: '',
@@ -73,10 +71,23 @@ export default function BookingInfoPage() {
 
   useEffect(() => {
     setProfileAvailable(Boolean(isAuthenticated && user));
-  }, []);
+  }, [isAuthenticated, user]);
 
   const updateField = <K extends keyof GuestInfoForm>(field: K, value: GuestInfoForm[K]) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      // Sync headcount changes back to BookingContext
+      if (field === 'adults' || field === 'children') {
+        setSearch({
+          bookingType,
+          checkInDate,
+          checkOutDate: bookingType === 'overnight' ? checkOutDate : undefined,
+          adults: next.adults,
+          children: next.children,
+        });
+      }
+      return next;
+    });
   };
 
   const handleUseProfileChange = (checked: boolean) => {
@@ -128,7 +139,6 @@ export default function BookingInfoPage() {
     try {
       setGuestInfo({
         firstName: form.firstName,
-        middleName: form.middleName,
         lastName: form.lastName,
         email: form.email,
         phone: form.phone,
@@ -209,19 +219,13 @@ export default function BookingInfoPage() {
               </div>
 
               {/* Name fields */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormInput
                   label="First name *"
                   value={form.firstName}
                   onChange={(value) => updateField('firstName', value)}
                   placeholder="Juan"
                   error={errors.firstName}
-                />
-                <FormInput
-                  label="Middle name"
-                  value={form.middleName}
-                  onChange={(value) => updateField('middleName', value)}
-                  placeholder="Santos"
                 />
                 <FormInput
                   label="Last name *"

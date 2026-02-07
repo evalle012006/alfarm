@@ -11,7 +11,6 @@ export interface BookingCartItem {
 
 export interface BookingGuestInfo {
   firstName: string;
-  middleName?: string;
   lastName: string;
   email: string;
   phone: string;

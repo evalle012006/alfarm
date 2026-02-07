@@ -188,6 +188,7 @@ export default function BookingCheckoutPage() {
         booking_type: state.bookingType,
         items: lineItems.map((li) => ({ product_id: li.id, quantity: li.qty })),
         special_requests: state.specialRequests || null,
+        payment_method: state.paymentMethod,
       };
 
       const res = await fetch('/api/bookings', {
@@ -207,12 +208,12 @@ export default function BookingCheckoutPage() {
       setBookingSuccess(true);
       setShowConfirmModal(false);
 
-      // Redirect after showing success state
+      // Redirect after brief success animation
+      const successBookingId = data.booking_id;
       setTimeout(() => {
-        // Clear booking flow state but keep dates/guests for quick re-book
         reset({ keepSearch: true });
-        router.push(`/booking/confirmation/${data.booking_id}`);
-      }, 2000);
+        router.push(`/booking/success/${successBookingId}`);
+      }, 1500);
     } catch (err) {
       setNotification({
         show: true,
@@ -399,52 +400,52 @@ export default function BookingCheckoutPage() {
                     <div className="font-semibold text-accent dark:text-white">{state.guestInfo?.phone}</div>
                   </div>
                 </div>
+              </div>
 
-                {/* Terms and Action Buttons Container */}
-                <div className="order-2">
-                  {/* Terms and Conditions */}
-                  <div className="p-5 rounded-2xl bg-gradient-to-br from-primary/5 to-secondary/5 dark:from-slate-800 dark:to-slate-800 border border-primary/20 dark:border-slate-700">
-                    <div className="flex items-start gap-3">
-                      <input
-                        id="terms"
-                        type="checkbox"
-                        checked={termsAccepted}
-                        onChange={(e) => setTermsAccepted(e.target.checked)}
-                        className="mt-1 w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
-                      />
-                      <label htmlFor="terms" className="text-sm text-gray-700 dark:text-gray-300 flex-1">
-                        I agree to the resort house rules and cancellation policy. I understand this is a demo booking system.
-                      </label>
-                    </div>
+              {/* Terms & Actions Section */}
+              <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-lg hover:shadow-xl transition-shadow duration-300 p-6 md:p-8 border border-gray-100 dark:border-slate-800 order-4">
+                {/* Terms and Conditions */}
+                <div className="p-5 rounded-2xl bg-gradient-to-br from-primary/5 to-secondary/5 dark:from-slate-800 dark:to-slate-800 border border-primary/20 dark:border-slate-700">
+                  <div className="flex items-start gap-3">
+                    <input
+                      id="terms"
+                      type="checkbox"
+                      checked={termsAccepted}
+                      onChange={(e) => setTermsAccepted(e.target.checked)}
+                      className="mt-1 w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                    />
+                    <label htmlFor="terms" className="text-sm text-gray-700 dark:text-gray-300 flex-1">
+                      I agree to the resort house rules and cancellation policy. I understand this is a demo booking system.
+                    </label>
                   </div>
+                </div>
 
-                  {/* Action Buttons */}
-                  <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                    <button
-                      type="button"
-                      onClick={() => router.push('/booking/info')}
-                      className="px-6 py-3 rounded-xl border-2 border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-white font-semibold hover:bg-gray-50 dark:hover:bg-slate-700 transition-all duration-200 w-full sm:w-auto text-center"
-                    >
-                      ← Back
-                    </button>
-                    <PrimaryButton
-                      onClick={() => {
-                        if (!termsAccepted) {
-                          setNotification({
-                            show: true,
-                            message: 'Please accept the terms and cancellation policy before continuing.',
-                            type: 'warning',
-                          });
-                          return;
-                        }
-                        setShowConfirmModal(true);
-                      }}
-                      disabled={isSubmitting || loadingProducts}
-                      className="w-full sm:flex-1 text-center"
-                    >
-                      Place Booking →
-                    </PrimaryButton>
-                  </div>
+                {/* Action Buttons */}
+                <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                  <button
+                    type="button"
+                    onClick={() => router.push('/booking/info')}
+                    className="px-6 py-3 rounded-xl border-2 border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-white font-semibold hover:bg-gray-50 dark:hover:bg-slate-700 transition-all duration-200 w-full sm:w-auto text-center"
+                  >
+                    ← Back
+                  </button>
+                  <PrimaryButton
+                    onClick={() => {
+                      if (!termsAccepted) {
+                        setNotification({
+                          show: true,
+                          message: 'Please accept the terms and cancellation policy before continuing.',
+                          type: 'warning',
+                        });
+                        return;
+                      }
+                      setShowConfirmModal(true);
+                    }}
+                    disabled={isSubmitting || loadingProducts}
+                    className="w-full sm:flex-1 text-center"
+                  >
+                    Place Booking →
+                  </PrimaryButton>
                 </div>
               </div>
             </div>
@@ -701,7 +702,16 @@ export default function BookingCheckoutPage() {
             </div>
             <h2 className="text-4xl font-bold text-white mb-3">Booking Confirmed!</h2>
             <p className="text-xl text-white/90 mb-2">Your reservation has been placed successfully.</p>
-            <p className="text-white/75">Redirecting to confirmation page...</p>
+            <p className="text-white/75 mb-6">Redirecting to your booking details...</p>
+            <button
+              onClick={() => {
+                reset({ keepSearch: true });
+                router.push(`/booking/success/${state.lastBookingId}`);
+              }}
+              className="px-8 py-3 rounded-xl bg-white text-primary font-semibold hover:bg-white/90 transition-all duration-200 shadow-lg"
+            >
+              View Booking Details →
+            </button>
           </div>
         </div>
       )}

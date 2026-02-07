@@ -17,6 +17,7 @@ interface ProductOption {
   description: string;
   type: string;
   category: string;
+  time_slot: string;
 }
 
 interface AvailabilityItem {
@@ -47,18 +48,26 @@ function BookingResultsContent() {
   const [filter, setFilter] = useState<string>('all');
   const cart = bookingState.cart;
   const [availabilityMap, setAvailabilityMap] = useState<Record<number, AvailabilityItem>>({});
+  const [entranceFees, setEntranceFees] = useState<{
+    day: { adult: { id: number; price: number } | null; child: { id: number; price: number } | null };
+    night: { adult: { id: number; price: number } | null; child: { id: number; price: number } | null };
+  } | null>(null);
   const [notification, setNotification] = useState<{
     show: boolean;
     message: string;
     type: NotificationType;
   }>({ show: false, message: '', type: 'error' });
 
+  // Guard: redirect if no date selected
   useEffect(() => {
     if (!checkInDate) {
       router.push('/');
-      return;
     }
+  }, [checkInDate, router]);
 
+  // Sync URL search params into BookingContext
+  useEffect(() => {
+    if (!checkInDate) return;
     setSearch({
       bookingType: searchType,
       checkInDate,
@@ -66,7 +75,12 @@ function BookingResultsContent() {
       adults: searchAdults,
       children: searchChildren,
     });
+    // Only sync when URL-derived search params change, not on every bookingState change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchType, checkInDate, checkOutDate, searchAdults, searchChildren]);
 
+  // Fetch products (static catalog — only needs to run once)
+  useEffect(() => {
     async function fetchProducts() {
       try {
         const response = await fetch('/api/products');
@@ -82,6 +96,18 @@ function BookingResultsContent() {
         setLoading(false);
       }
     }
+
+    fetchProducts();
+
+    fetch('/api/products/entrance-fees')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => { if (data) setEntranceFees(data); })
+      .catch(() => {});
+  }, []);
+
+  // Fetch availability — re-runs when dates or booking type change
+  useEffect(() => {
+    if (!checkInDate) return;
 
     async function fetchAvailability() {
       try {
@@ -117,9 +143,8 @@ function BookingResultsContent() {
       }
     }
 
-    fetchProducts();
     fetchAvailability();
-  }, []);
+  }, [checkInDate, checkOutDate, searchType]);
 
   // Filter products based on booking type and excluding entrance fees
   const filteredProducts = products.filter(product => {
@@ -133,9 +158,11 @@ function BookingResultsContent() {
       if (filter === 'add-on' && product.type !== 'add-on') return false;
     }
 
-    // 3. Filter by initial search type (Day-use vs Overnight)
-    // For overnight: prioritize per_night items, hide day-only items
-    // For day-use: prioritize day items, hide night-only items
+    // 3. Filter by search type using time_slot from DB
+    // day bookings: show 'day' and 'any' products
+    // overnight bookings: show 'night' and 'any' products
+    if (searchType === 'day' && product.time_slot === 'night') return false;
+    if (searchType === 'overnight' && product.time_slot === 'day') return false;
 
     return true;
   });
@@ -160,13 +187,13 @@ function BookingResultsContent() {
 
   const totalItems = Object.values(cart).reduce((a, b) => a + b, 0);
 
-  // Calculate Entrance Fees
-  const FEES = {
-    DAY: { ADULT: 60, CHILD: 30 },
-    NIGHT: { ADULT: 70, CHILD: 35 }
-  };
-  const currentFees = searchType === 'day' ? FEES.DAY : FEES.NIGHT;
-  const totalEntranceFees = (searchAdults * currentFees.ADULT) + (searchChildren * currentFees.CHILD);
+  // Calculate Entrance Fees from DB
+  const currentFees = entranceFees
+    ? (searchType === 'day' ? entranceFees.day : entranceFees.night)
+    : null;
+  const adultFee = currentFees?.adult?.price ?? 0;
+  const childFee = currentFees?.child?.price ?? 0;
+  const totalEntranceFees = (searchAdults * adultFee) + (searchChildren * childFee);
 
   // Total Cost = Product Costs + Entrance Fees
   // For overnight stays, multiply per_night items by number of nights
@@ -363,14 +390,11 @@ function BookingResultsContent() {
                           {product.category}
                         </span>
                         <div className="flex items-center gap-2">
-                          {typeof remaining === 'number' && (
+                          {typeof remaining === 'number' && !isAvailable && (
                             <span
-                              className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wider ${isAvailable
-                                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
-                                : 'border-red-500/30 bg-red-500/10 text-red-700 dark:bg-red-500/20 dark:text-red-300'
-                                }`}
+                              className="inline-flex items-center rounded-full border border-red-500/30 bg-red-500/10 text-red-700 dark:bg-red-500/20 dark:text-red-300 px-3 py-1 text-xs font-semibold uppercase tracking-wider"
                             >
-                              {isAvailable ? `${remaining} left` : 'Sold out'}
+                              Sold out
                             </span>
                           )}
                           {quantity > 0 && (

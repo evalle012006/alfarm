@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
   // Clear the admin cookie
   response.cookies.set(ADMIN_COOKIE_NAME, '', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.COOKIE_SECURE === 'true',
     sameSite: 'lax',
     path: '/',
     maxAge: 0, // Expire immediately

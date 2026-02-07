@@ -43,7 +43,8 @@ services:
     container_name: alfarm_web
     restart: unless-stopped
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
+      COOKIE_SECURE: "false"
       # Database connection (uses docker network hostname)
       DB_HOST: db
       DB_PORT: 5432

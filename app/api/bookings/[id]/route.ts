@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { handleUnexpectedError } from '@/lib/apiErrors';
+import { authenticateRequest } from '@/lib/authMiddleware';
+import { logAuditWithRequest, AuditActions, EntityTypes } from '@/lib/audit';
 
 /**
  * GET /api/bookings/[id]
@@ -92,3 +94,4 @@ export async function GET(
     return handleUnexpectedError(error);
   }
 }
+

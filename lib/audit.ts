@@ -42,12 +42,12 @@ export const AuditActions = {
   BOOKING_CANCEL: 'booking.cancel',
   BOOKING_CHECKIN: 'booking.checkin',
   BOOKING_CHECKOUT: 'booking.checkout',
-  
+
   // Payment actions
   PAYMENT_COLLECT: 'payment.collect',
   PAYMENT_VOID: 'payment.void',
   PAYMENT_REFUND: 'payment.refund',
-  
+
   // Staff actions
   STAFF_CREATE: 'staff.create',
   STAFF_UPDATE: 'staff.update',
@@ -55,6 +55,10 @@ export const AuditActions = {
   STAFF_ENABLE: 'staff.enable',
   STAFF_PASSWORD_RESET: 'staff.password_reset',
   STAFF_ROLE_CHANGE: 'staff.role_change',
+
+  // Profile actions
+  PROFILE_UPDATE: 'profile.update',
+  PASSWORD_CHANGE: 'profile.password_change',
 } as const;
 
 /**
@@ -75,12 +79,12 @@ export function getClientIP(request: NextRequest): string {
   if (forwardedFor) {
     return forwardedFor.split(',')[0].trim();
   }
-  
+
   const realIP = request.headers.get('x-real-ip');
   if (realIP) {
     return realIP;
   }
-  
+
   // Fallback - may not be accurate behind proxies
   return 'unknown';
 }
@@ -102,7 +106,7 @@ export function getUserAgent(request: NextRequest): string {
  */
 export async function logAudit(entry: AuditLogEntry): Promise<number> {
   const { actorUserId, actorEmail, action, entityType, entityId, metadata } = entry;
-  
+
   const result = await pool.query(
     `INSERT INTO audit_logs (actor_user_id, actor_email, action, entity_type, entity_id, metadata)
      VALUES ($1, $2, $3, $4, $5, $6)
@@ -116,7 +120,7 @@ export async function logAudit(entry: AuditLogEntry): Promise<number> {
       metadata ? JSON.stringify(metadata) : null,
     ]
   );
-  
+
   return result.rows[0].id;
 }
 
@@ -135,7 +139,7 @@ export async function logAuditWithRequest(
 ): Promise<number> {
   const ip = getClientIP(request);
   const userAgent = getUserAgent(request);
-  
+
   return logAudit({
     ...entry,
     metadata: {

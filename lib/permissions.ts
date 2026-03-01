@@ -36,24 +36,24 @@ export const ALL_PERMISSIONS = [
   'bookings:cancel',
   'bookings:checkin',
   'bookings:checkout',
-  
+
   // Payment permissions
   'payments:read',
   'payments:collect',
   'payments:void',
   'payments:refund',
-  
+
   // Inventory/Product permissions
   'inventory:read',
   'inventory:manage',
-  
+
   // Staff management permissions
   'staff:read',
   'staff:manage',
-  
+
   // Audit log permissions
   'audit:read',
-  
+
   // RBAC management (future)
   'rbac:manage',
 ] as const;
@@ -99,9 +99,10 @@ export const ROLE_PERMISSIONS: Record<string, PermissionSet> = {
     'payments:read',
     'payments:collect',
     'inventory:read',
+    'staff:read',
   ],
   [ROLE_GUEST]: [],
-  
+
   // Legacy roles - explicitly mapped to full access
   // These are NOT normalized; they are explicitly granted permissions
   [LEGACY_ROLE_ADMIN]: FULL_ACCESS,
@@ -120,12 +121,12 @@ export const ROLE_PERMISSIONS: Record<string, PermissionSet> = {
  */
 export function getPermissionsForRole(role: string): PermissionSet {
   const permissions = ROLE_PERMISSIONS[role];
-  
+
   // Unknown roles get no permissions (security: allowlist-based)
   if (permissions === undefined) {
     return [];
   }
-  
+
   return permissions;
 }
 
@@ -138,12 +139,12 @@ export function getPermissionsForRole(role: string): PermissionSet {
  */
 export function hasPermission(role: string, permission: Permission): boolean {
   const permissions = getPermissionsForRole(role);
-  
+
   // Full access grants all permissions
   if (permissions === FULL_ACCESS) {
     return true;
   }
-  
+
   // Check if permission is in the list
   return permissions.includes(permission);
 }
@@ -179,10 +180,10 @@ export function hasAllPermissions(role: string, requiredPermissions: Permission[
  */
 export function getPermissionsForResponse(role: string): Permission[] | '*' {
   const permissions = getPermissionsForRole(role);
-  
+
   if (permissions === FULL_ACCESS) {
     return '*';
   }
-  
+
   return permissions;
 }

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { Toaster } from 'sonner';
 
 interface AdminUser {
     email: string;
@@ -23,6 +24,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const navigation = [
         { name: 'Dashboard', href: '/admin/dashboard', icon: '📊' },
         { name: 'Bookings', href: '/admin/bookings', icon: '📋' },
+        { name: 'Guests', href: '/admin/guests', icon: '👤' },
         { name: 'Products', href: '/admin/products', icon: '🏨' },
         { name: 'Staff', href: '/admin/staff', icon: '👥' },
         { name: 'Audit Logs', href: '/admin/audit', icon: '📝' },
@@ -31,7 +33,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     useEffect(() => {
         // Don't fetch user on login page
         if (isLoginPage) return;
-        
+
         async function fetchUser() {
             try {
                 const response = await fetch('/api/admin/me', { credentials: 'include' });
@@ -65,6 +67,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
+            <Toaster position="top-right" richColors />
             {/* Mobile sidebar backdrop */}
             {sidebarOpen && (
                 <div
@@ -104,8 +107,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                     key={item.name}
                                     href={item.href}
                                     className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${isActive
-                                            ? 'bg-primary text-white shadow-lg shadow-primary/30'
-                                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800'
+                                        ? 'bg-primary text-white shadow-lg shadow-primary/30'
+                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800'
                                         }`}
                                 >
                                     <span className="text-xl">{item.icon}</span>

@@ -1,0 +1,115 @@
+
+> alfarm-resort@1.0.0 build
+> next build
+
+  ▲ Next.js 14.2.33
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/33) ...
+Admin me error: B [Error]: Dynamic server usage: Route /api/admin/me couldn't be rendered statically because it used `request.cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V (C:\SCHOOL\PROJECTS\ALFarm\alfarm\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get (C:\SCHOOL\PROJECTS\ALFarm\alfarm\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at d (C:\SCHOOL\PROJECTS\ALFarm\alfarm\.next\server\app\api\admin\me\route.js:1:4270)
+    at l (C:\SCHOOL\PROJECTS\ALFarm\alfarm\.next\server\app\api\admin\me\route.js:1:1217)
+    at C:\SCHOOL\PROJECTS\ALFarm\alfarm\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\SCHOOL\PROJECTS\ALFarm\alfarm\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with (C:\SCHOOL\PROJECTS\ALFarm\alfarm\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with (C:\SCHOOL\PROJECTS\ALFarm\alfarm\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan (C:\SCHOOL\PROJECTS\ALFarm\alfarm\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093)
+    at ProxyTracer.startActiveSpan (C:\SCHOOL\PROJECTS\ALFarm\alfarm\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18854) {
+  description: "Route /api/admin/me couldn't be rendered statically because it used `request.cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Unexpected error: B [Error]: Dynamic server usage: Route /api/admin/me couldn't be rendered statically because it used `request.cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V (C:\SCHOOL\PROJECTS\ALFarm\alfarm\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get (C:\SCHOOL\PROJECTS\ALFarm\alfarm\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at d (C:\SCHOOL\PROJECTS\ALFarm\alfarm\.next\server\app\api\admin\me\route.js:1:4270)
+    at l (C:\SCHOOL\PROJECTS\ALFarm\alfarm\.next\server\app\api\admin\me\route.js:1:1217)
+    at C:\SCHOOL\PROJECTS\ALFarm\alfarm\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\SCHOOL\PROJECTS\ALFarm\alfarm\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with (C:\SCHOOL\PROJECTS\ALFarm\alfarm\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with (C:\SCHOOL\PROJECTS\ALFarm\alfarm\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan (C:\SCHOOL\PROJECTS\ALFarm\alfarm\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093)
+    at ProxyTracer.startActiveSpan (C:\SCHOOL\PROJECTS\ALFarm\alfarm\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18854) {
+  description: "Route /api/admin/me couldn't be rendered statically because it used `request.cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+   Generating static pages (8/33) 
+   Generating static pages (16/33) 
+Error fetching products: B [Error]: Dynamic server usage: Route /api/products couldn't be rendered statically because it used `nextUrl.searchParams`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V (C:\SCHOOL\PROJECTS\ALFarm\alfarm\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get (C:\SCHOOL\PROJECTS\ALFarm\alfarm\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29137)
+    at i (C:\SCHOOL\PROJECTS\ALFarm\alfarm\.next\server\app\api\products\route.js:1:1189)
+    at C:\SCHOOL\PROJECTS\ALFarm\alfarm\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\SCHOOL\PROJECTS\ALFarm\alfarm\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with (C:\SCHOOL\PROJECTS\ALFarm\alfarm\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with (C:\SCHOOL\PROJECTS\ALFarm\alfarm\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan (C:\SCHOOL\PROJECTS\ALFarm\alfarm\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093)
+    at ProxyTracer.startActiveSpan (C:\SCHOOL\PROJECTS\ALFarm\alfarm\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18854)
+    at C:\SCHOOL\PROJECTS\ALFarm\alfarm\node_modules\next\dist\server\lib\trace\tracer.js:122:103 {
+  description: "Route /api/products couldn't be rendered statically because it used `nextUrl.searchParams`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+   Generating static pages (24/33) 
+ ✓ Generating static pages (33/33)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+┌ ○ /                                    8.11 kB         112 kB
+├ ○ /_not-found                          873 B          88.1 kB
+├ ○ /about                               215 B           105 kB
+├ ○ /activities                          215 B           105 kB
+├ ○ /admin/audit                         2.5 kB         98.5 kB
+├ ○ /admin/bookings                      5.4 kB         92.6 kB
+├ ƒ /admin/bookings/[id]                 13.8 kB         121 kB
+├ ○ /admin/dashboard                     1.66 kB        97.6 kB
+├ ○ /admin/login                         1.38 kB         103 kB
+├ ○ /admin/products                      3.42 kB        92.9 kB
+├ ○ /admin/staff                         2.72 kB        98.7 kB
+├ ƒ /api/admin/audit                     0 B                0 B
+├ ƒ /api/admin/bookings                  0 B                0 B
+├ ƒ /api/admin/bookings/[id]             0 B                0 B
+├ ƒ /api/admin/bookings/[id]/checkin     0 B                0 B
+├ ƒ /api/admin/bookings/[id]/checkout    0 B                0 B
+├ ƒ /api/admin/bookings/[id]/payment     0 B                0 B
+├ ƒ /api/admin/logout                    0 B                0 B
+├ ƒ /api/admin/me                        0 B                0 B
+├ ƒ /api/admin/staff                     0 B                0 B
+├ ƒ /api/admin/staff/[id]                0 B                0 B
+├ ƒ /api/auth/login                      0 B                0 B
+├ ƒ /api/auth/me                         0 B                0 B
+├ ƒ /api/auth/register                   0 B                0 B
+├ ƒ /api/availability                    0 B                0 B
+├ ƒ /api/bookings                        0 B                0 B
+├ ƒ /api/bookings/[id]                   0 B                0 B
+├ ƒ /api/bookings/history                0 B                0 B
+├ ƒ /api/products                        0 B                0 B
+├ ○ /api/products/entrance-fees          0 B                0 B
+├ ○ /booking/checkout                    8.06 kB         112 kB
+├ ƒ /booking/confirmation/[id]           4.71 kB         109 kB
+├ ○ /booking/info                        6.06 kB         110 kB
+├ ○ /booking/results                     7.35 kB         112 kB
+├ ƒ /booking/success/[id]                11.2 kB         115 kB
+├ ○ /contact                             215 B           105 kB
+├ ○ /gallery                             215 B           105 kB
+├ ○ /guest/dashboard                     17.6 kB         122 kB
+├ ○ /guest/login                         1.82 kB         103 kB
+├ ○ /guest/register                      2.18 kB         104 kB
+└ ○ /rooms                               215 B           105 kB
++ First Load JS shared by all            87.2 kB
+  ├ chunks/117-3831501d0d656f14.js       31.7 kB
+  ├ chunks/fd9d1056-2a00d09cb9d99b82.js  53.6 kB
+  └ other shared chunks (total)          1.89 kB
+
+
+ƒ Middleware                             32.5 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

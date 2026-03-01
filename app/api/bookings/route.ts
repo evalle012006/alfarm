@@ -5,6 +5,7 @@ import pool from '@/lib/db';
 import { sendBookingConfirmationEmail } from '@/lib/email';
 import { checkRateLimit, RateLimitPresets } from '@/lib/rateLimit';
 import { ErrorResponses, handleUnexpectedError } from '@/lib/apiErrors';
+import { getCurrentUser } from '@/lib/authMiddleware';
 
 /**
  * Zod schema for booking creation payload
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
     RateLimitPresets.booking.limit,
     RateLimitPresets.booking.windowMs
   );
-  
+
   if (rateLimitResponse) {
     return rateLimitResponse;
   }
@@ -116,7 +117,7 @@ export async function POST(request: NextRequest) {
   // INPUT VALIDATION (Zod)
   // ============================================
   let body: BookingPayload;
-  
+
   try {
     const rawBody = await request.json();
     body = BookingPayloadSchema.parse(rawBody);
@@ -130,8 +131,8 @@ export async function POST(request: NextRequest) {
     return ErrorResponses.validationError('Invalid JSON in request body');
   }
 
-  const { 
-    guest_info, 
+  const {
+    guest_info,
     booking_date,
     check_out_date,
     booking_time,
@@ -145,7 +146,7 @@ export async function POST(request: NextRequest) {
   // DATABASE TRANSACTION WITH ROW-LEVEL LOCKING
   // ============================================
   const client = await pool.connect();
-  
+
   try {
     await client.query('BEGIN');
 
@@ -154,7 +155,7 @@ export async function POST(request: NextRequest) {
     // CRITICAL: FOR UPDATE prevents concurrent overselling
     // ============================================
     const lockedProducts = new Map<number, any>();
-    
+
     for (const item of items) {
       // Lock the product row for this transaction
       const productLock = await client.query(
@@ -185,7 +186,7 @@ export async function POST(request: NextRequest) {
     // ============================================
     for (const item of items) {
       const product = lockedProducts.get(item.product_id)!;
-      
+
       // Calculate booked quantity for date range
       const availQuery = booking_type === 'overnight' && check_out_date
         ? `
@@ -228,30 +229,35 @@ export async function POST(request: NextRequest) {
     }
 
     // ============================================
-    // STEP 3: CREATE OR FIND USER (SHADOW ACCOUNT)
+    // STEP 3: IDENTIFY USER (AUTHENTICATED OR SHADOW ACCOUNT)
     // ============================================
-    let userId = null;
-    const userRes = await client.query(
-      'SELECT id FROM users WHERE email = $1',
-      [guest_info.email]
-    );
+    const authenticatedUser = getCurrentUser(request);
+    let userId = authenticatedUser?.id || null;
 
-    if (userRes.rows.length > 0) {
-      userId = userRes.rows[0].id;
-    } else {
-      const newUser = await client.query(
-        `INSERT INTO users (email, password, first_name, last_name, phone, role)
-         VALUES ($1, $2, $3, $4, $5, 'guest')
-         RETURNING id`,
-        [
-          guest_info.email, 
-          '$2a$10$placeholderHashForGuestCheckout................',
-          guest_info.first_name,
-          guest_info.last_name,
-          guest_info.phone
-        ]
+    if (!userId) {
+      // Not authenticated, search for existing guest by email or create shadow account
+      const userRes = await client.query(
+        'SELECT id FROM users WHERE email = $1',
+        [guest_info.email]
       );
-      userId = newUser.rows[0].id;
+
+      if (userRes.rows.length > 0) {
+        userId = userRes.rows[0].id;
+      } else {
+        const newUser = await client.query(
+          `INSERT INTO users (email, password, first_name, last_name, phone, role)
+           VALUES ($1, $2, $3, $4, $5, 'guest')
+           RETURNING id`,
+          [
+            guest_info.email,
+            '$2a$10$placeholderHashForGuestCheckout................',
+            guest_info.first_name,
+            guest_info.last_name,
+            guest_info.phone
+          ]
+        );
+        userId = newUser.rows[0].id;
+      }
     }
 
     // ============================================
@@ -303,7 +309,7 @@ export async function POST(request: NextRequest) {
       const product = lockedProducts.get(item.product_id)!;
       const price = parseFloat(product.price);
       const pricingUnit = product.pricing_unit;
-      
+
       // Calculate subtotal based on pricing unit
       let subtotal: number;
       if (pricingUnit === 'per_night' && booking_type === 'overnight') {
@@ -311,7 +317,7 @@ export async function POST(request: NextRequest) {
       } else {
         subtotal = price * item.quantity;
       }
-      
+
       totalAmount += subtotal;
 
       await client.query(

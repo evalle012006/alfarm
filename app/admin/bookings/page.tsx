@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import Link from 'next/link';
+import { Plus } from 'lucide-react';
 import StatusBadge from '@/components/admin/StatusBadge';
 import Pagination from '@/components/admin/Pagination';
 import Modal from '@/components/admin/Modal';
@@ -106,7 +108,7 @@ export default function AdminBookingsPage() {
         try {
             setLoading(true);
             const params = new URLSearchParams();
-            
+
             if (statusFilter !== 'all') {
                 params.set('status', statusFilter);
             }
@@ -245,9 +247,16 @@ export default function AdminBookingsPage() {
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <span className="px-4 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    <span className="hidden sm:inline-block px-4 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-300">
                         {totalCount} Total
                     </span>
+                    <Link
+                        href="/admin/bookings/new"
+                        className="px-5 py-2.5 bg-gradient-to-r from-primary to-primary-600 text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all flex items-center gap-2"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span>Create New</span>
+                    </Link>
                 </div>
             </div>
 
@@ -389,12 +398,12 @@ export default function AdminBookingsPage() {
                                                 <StatusBadge status={booking.payment_status} />
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <button
-                                                    onClick={() => handleView(booking)}
+                                                <Link
+                                                    href={`/admin/bookings/${booking.id}`}
                                                     className="text-primary hover:text-primary-600 mr-3"
                                                 >
                                                     View
-                                                </button>
+                                                </Link>
                                                 <button
                                                     onClick={() => handleEdit(booking)}
                                                     className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"

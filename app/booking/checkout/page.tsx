@@ -8,6 +8,7 @@ import PrimaryButton from '@/components/ui/PrimaryButton';
 import Notification, { NotificationType } from '@/components/ui/Notification';
 import BookingStepper from '@/components/BookingStepper';
 import { getBookingCartItems, useBooking } from '@/lib/BookingContext';
+import { useAuth } from '@/lib/AuthContext';
 
 interface ProductOption {
   id: number;
@@ -24,6 +25,7 @@ type FeeKind = 'adult' | 'child';
 export default function BookingCheckoutPage() {
   const router = useRouter();
   const { state, setPaymentMethod, setConfirmation, reset } = useBooking();
+  const { token } = useAuth();
 
   const [products, setProducts] = useState<ProductOption[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -196,7 +198,10 @@ export default function BookingCheckoutPage() {
 
       const res = await fetch('/api/bookings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(payload),
       });
 

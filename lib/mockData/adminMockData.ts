@@ -310,3 +310,91 @@ export const mockProducts: MockProduct[] = [
         is_active: false
     }
 ];
+
+export interface MockGuest {
+    id: number;
+    email: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    role: string;
+    isActive: boolean;
+    createdAt: string;
+    isShadow: boolean;
+    totalBookings: number;
+    lastBookingDate: string | null;
+    totalSpent: number;
+}
+
+export const mockGuests: MockGuest[] = [
+    {
+        id: 1,
+        email: 'juan@example.com',
+        firstName: 'Juan',
+        lastName: 'Dela Cruz',
+        phone: '09171234567',
+        role: 'guest',
+        isActive: true,
+        createdAt: '2024-12-01T08:00:00Z',
+        isShadow: false,
+        totalBookings: 5,
+        lastBookingDate: '2025-01-15',
+        totalSpent: 12500
+    },
+    {
+        id: 2,
+        email: 'maria@example.com',
+        firstName: 'Maria',
+        lastName: 'Santos',
+        phone: '09187654321',
+        role: 'guest',
+        isActive: true,
+        createdAt: '2024-11-20T10:30:00Z',
+        isShadow: false,
+        totalBookings: 2,
+        lastBookingDate: '2025-01-20',
+        totalSpent: 4200
+    },
+    {
+        id: 3,
+        email: 'pedro@example.com',
+        firstName: 'Pedro',
+        lastName: 'Reyes',
+        phone: '09191112222',
+        role: 'guest',
+        isActive: true,
+        createdAt: '2025-01-05T14:15:00Z',
+        isShadow: true,
+        totalBookings: 1,
+        lastBookingDate: '2025-01-10',
+        totalSpent: 3000
+    },
+    {
+        id: 4,
+        email: 'shadow_guest@example.com',
+        firstName: 'Shadow',
+        lastName: 'Account',
+        phone: '09000000000',
+        role: 'guest',
+        isActive: true,
+        createdAt: '2025-02-10T11:00:00Z',
+        isShadow: true,
+        totalBookings: 1,
+        lastBookingDate: '2025-02-10',
+        totalSpent: 1500
+    },
+    {
+        id: 5,
+        email: 'elena@example.com',
+        firstName: 'Elena',
+        lastName: 'Morales',
+        phone: '09223334444',
+        role: 'guest',
+        isActive: true,
+        createdAt: '2025-01-28T09:45:00Z',
+        isShadow: false,
+        totalBookings: 3,
+        lastBookingDate: '2025-02-05',
+        totalSpent: 8500
+    }
+];

@@ -40,7 +40,7 @@ body {
   }
   
   .input-field {
-    @apply w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200;
+    @apply w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 bg-white text-black dark:bg-white dark:text-black dark:border-slate-700;
   }
 
   .section-title {

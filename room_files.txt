@@ -1,0 +1,26 @@
+c:\SCHOOL\PROJECTS\ALFarm\alfarm\app\rooms\accomadation_images\blue_room
+c:\SCHOOL\PROJECTS\ALFarm\alfarm\app\rooms\accomadation_images\dorm_style_cottage
+c:\SCHOOL\PROJECTS\ALFarm\alfarm\app\rooms\accomadation_images\function_hall
+c:\SCHOOL\PROJECTS\ALFarm\alfarm\app\rooms\accomadation_images\mini_resthouse
+c:\SCHOOL\PROJECTS\ALFarm\alfarm\app\rooms\accomadation_images\native_style_room
+c:\SCHOOL\PROJECTS\ALFarm\alfarm\app\rooms\accomadation_images\orange_terrace
+c:\SCHOOL\PROJECTS\ALFarm\alfarm\app\rooms\accomadation_images\pools
+c:\SCHOOL\PROJECTS\ALFarm\alfarm\app\rooms\accomadation_images\rest_house
+c:\SCHOOL\PROJECTS\ALFarm\alfarm\app\rooms\accomadation_images\screen_cottages
+c:\SCHOOL\PROJECTS\ALFarm\alfarm\app\rooms\accomadation_images\signage
+c:\SCHOOL\PROJECTS\ALFarm\alfarm\app\rooms\accomadation_images\tables
+c:\SCHOOL\PROJECTS\ALFarm\alfarm\app\rooms\accomadation_images\yellow_terrace
+c:\SCHOOL\PROJECTS\ALFarm\alfarm\app\rooms\accomadation_images\yellow_terrace_1
+c:\SCHOOL\PROJECTS\ALFarm\alfarm\app\rooms\accomadation_images\blue_room\blue_room_1.jpeg
+c:\SCHOOL\PROJECTS\ALFarm\alfarm\app\rooms\accomadation_images\blue_room\blue_room_2.jpeg
+c:\SCHOOL\PROJECTS\ALFarm\alfarm\app\rooms\accomadation_images\blue_room\blue_room_3.jpeg
+c:\SCHOOL\PROJECTS\ALFarm\alfarm\app\rooms\accomadation_images\blue_room\blue_room_4.jpeg
+c:\SCHOOL\PROJECTS\ALFarm\alfarm\app\rooms\accomadation_images\blue_room\blue_room_5.jpeg
+c:\SCHOOL\PROJECTS\ALFarm\alfarm\app\rooms\accomadation_images\blue_room\blue_room_6.jpeg
+c:\SCHOOL\PROJECTS\ALFarm\alfarm\app\rooms\accomadation_images\dorm_style_cottage\dorm_style_cottage_1.jpeg
+c:\SCHOOL\PROJECTS\ALFarm\alfarm\app\rooms\accomadation_images\dorm_style_cottage\dorm_style_cottage_2.jpeg
+c:\SCHOOL\PROJECTS\ALFarm\alfarm\app\rooms\accomadation_images\dorm_style_cottage\dorm_style_cottage_3.jpeg
+c:\SCHOOL\PROJECTS\ALFarm\alfarm\app\rooms\accomadation_images\dorm_style_cottage\dorm_style_cottage_4.jpeg
+c:\SCHOOL\PROJECTS\ALFarm\alfarm\app\rooms\accomadation_images\dorm_style_cottage\dorm_style_cottage_5.jpeg
+c:\SCHOOL\PROJECTS\ALFarm\alfarm\app\rooms\accomadation_images\dorm_style_cottage\dorm_style_cottage_6.jpeg
+c:\SCHOOL\PROJECTS\ALFarm\alfarm\app\rooms\accomadation_images\dorm_style_cottage\??DORM STYLE COTTAGE ??.txt

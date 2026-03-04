@@ -18,7 +18,11 @@ interface ProductOption {
   type: string;
   category: string;
   time_slot: string;
+  imageUrl?: string;
 }
+
+import Lightbox from '@/components/ui/Lightbox';
+import Image from 'next/image';
 
 interface AvailabilityItem {
   id: number;
@@ -57,6 +61,19 @@ function BookingResultsContent() {
     message: string;
     type: NotificationType;
   }>({ show: false, message: '', type: 'error' });
+
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [currentGallery, setCurrentGallery] = useState<{ name: string, images: string[] }>({ name: '', images: [] });
+  const [photoIndex, setPhotoIndex] = useState(0);
+
+  const openGallery = (name: string, firstImage: string) => {
+    // We only have the primary image from the DB, but we can infer the folder
+    // For a better experience, we could fetch all images or just show the one
+    // For now, let's show the primary image in the lightbox
+    setCurrentGallery({ name, images: [firstImage] });
+    setPhotoIndex(0);
+    setLightboxOpen(true);
+  };
 
   // Guard: redirect if no date selected
   useEffect(() => {
@@ -102,7 +119,7 @@ function BookingResultsContent() {
     fetch('/api/products/entrance-fees')
       .then(res => res.ok ? res.json() : null)
       .then(data => { if (data) setEntranceFees(data); })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // Fetch availability — re-runs when dates or booking type change
@@ -384,6 +401,29 @@ function BookingResultsContent() {
                       : 'border-gray-200 hover:-translate-y-2 hover:shadow-2xl'
                       }`}
                   >
+                    {/* Product Image */}
+                    {product.imageUrl && (
+                      <div
+                        className="relative h-48 w-full overflow-hidden rounded-t-3xl cursor-pointer group/img"
+                        onClick={() => openGallery(product.title, product.imageUrl!)}
+                      >
+                        <Image
+                          src={product.imageUrl}
+                          alt={product.title}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover/img:scale-110"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          priority
+                          quality={70}
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/20 transition-all flex items-center justify-center opacity-0 group-hover/img:opacity-100">
+                          <div className="bg-white/90 text-primary px-3 py-1.5 rounded-lg text-xs font-bold">
+                            View Photo
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex-1 p-6">
                       <div className="mb-4 flex items-start justify-between gap-2">
                         <span className="inline-flex items-center rounded-full bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary dark:border-primary/30 dark:from-primary/20 dark:to-secondary/20">
@@ -513,6 +553,16 @@ function BookingResultsContent() {
       )}
 
       <Footer />
+
+      <Lightbox
+        isOpen={lightboxOpen}
+        images={currentGallery.images}
+        currentIndex={photoIndex}
+        onClose={() => setLightboxOpen(false)}
+        onPrev={() => setPhotoIndex((prev) => (prev > 0 ? prev - 1 : currentGallery.images.length - 1))}
+        onNext={() => setPhotoIndex((prev) => (prev < currentGallery.images.length - 1 ? prev + 1 : 0))}
+        title={currentGallery.name}
+      />
     </>
   );
 }

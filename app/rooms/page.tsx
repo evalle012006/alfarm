@@ -42,8 +42,8 @@ export default function Rooms() {
       name: 'Dorm Style Cottage',
       type: 'standard',
       icon: '🛖',
-      capacity: 25,
-      price: 5000,
+      capacity: 10,
+      price: 1200,
       description: 'Perfect for large groups or families. Traditional style with massive space.',
       images: [
         '/images/accommodation/dorm_style_cottage/dorm_style_cottage_6.jpeg',
@@ -53,7 +53,7 @@ export default function Rooms() {
         '/images/accommodation/dorm_style_cottage/dorm_style_cottage_5.jpeg',
         '/images/accommodation/dorm_style_cottage/dorm_style_cottage_1.jpeg',
       ],
-      features: ['Spacious Layout', 'Perfect for Groups', 'Natural Ventilation', 'Close to Amenities'],
+      features: ['Spacious Layout', 'Perfect for Groups', 'Natural Ventilation', 'Electric Fan'],
     },
     {
       id: 3,

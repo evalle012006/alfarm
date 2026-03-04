@@ -1,13 +1,15 @@
 const { Pool } = require('pg');
 
-// Use values from .env.local
+// Load environment variables from .env.local if not already provided
+require('dotenv').config({ path: '.env.local' });
+
 const pool = new Pool({
-    host: '167.71.192.17',
-    port: 5432,
-    user: 'alfarm_user',
-    password: "#>Alfarm.dev25!",
-    database: 'alfarm_resort',
-    ssl: { rejectUnauthorized: false } // Managed DBs usually need SSL
+    host: process.env.DB_HOST,
+    port: parseInt(process.env.DB_PORT || '5432'),
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    ssl: process.env.DB_SSL === 'false' ? false : { rejectUnauthorized: false }
 });
 
 async function syncProducts() {

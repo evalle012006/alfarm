@@ -170,6 +170,11 @@ export const RateLimitPresets = {
     limit: 5,
     windowMs: 60 * 1000, // 1 minute
   },
+  // 5 cancellations per hour
+  cancellation: {
+    limit: 5,
+    windowMs: 60 * 60 * 1000, // 1 hour
+  },
 };
 
 export default rateLimiter;

@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import { SignJWT, jwtVerify } from 'jose';
 import type { Role } from './roles';
 
 /**
@@ -10,7 +10,7 @@ import type { Role } from './roles';
  * 
  * Never use the default secret in production!
  */
-function getJWTSecret(): string {
+function getJWTSecretKey(): Uint8Array {
   const secret = process.env.JWT_SECRET;
   
   if (!secret) {
@@ -29,13 +29,11 @@ function getJWTSecret(): string {
       '⚠️  This is ONLY acceptable in development.\n' +
       '⚠️  Set JWT_SECRET environment variable before deploying.\n'
     );
-    return 'dev-only-insecure-secret-change-before-production';
+    return new TextEncoder().encode('dev-only-insecure-secret-change-before-production');
   }
   
-  return secret;
+  return new TextEncoder().encode(secret);
 }
-
-const JWT_SECRET = getJWTSecret();
 
 export interface User {
   id: number;
@@ -53,21 +51,22 @@ export async function verifyPassword(password: string, hashedPassword: string): 
   return bcrypt.compare(password, hashedPassword);
 }
 
-export function generateToken(user: User): string {
-  return jwt.sign(
-    {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-    },
-    JWT_SECRET,
-    { expiresIn: '7d' }
-  );
+export async function generateToken(user: User): Promise<string> {
+  return new SignJWT({
+    id: user.id,
+    email: user.email,
+    role: user.role,
+  })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('7d')
+    .sign(getJWTSecretKey());
 }
 
-export function verifyToken(token: string): any {
+export async function verifyToken(token: string): Promise<any> {
   try {
-    return jwt.verify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, getJWTSecretKey());
+    return payload;
   } catch (error) {
     return null;
   }

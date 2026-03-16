@@ -12,14 +12,15 @@ import { logAuditWithRequest, AuditActions, EntityTypes, createSnapshot } from '
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   // RBAC: Require bookings:checkin permission
   const check = await requirePermission(request, 'bookings:checkin');
   if (!check.authorized) return check.response;
 
   try {
-    const bookingId = parseInt(params.id);
+    const { id } = await params;
+    const bookingId = parseInt(id);
 
     if (isNaN(bookingId)) {
       return ErrorResponses.validationError('Invalid booking ID');

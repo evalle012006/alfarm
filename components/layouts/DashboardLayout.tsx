@@ -7,7 +7,7 @@ import Footer from '../Footer';
 type NavItem = {
   name: string;
   href: string;
-  icon: (props: React.SVGProps<SVGSVGElement>) => JSX.Element;
+  icon: (props: React.SVGProps<SVGSVGElement>) => React.JSX.Element;
 };
 
 const navigation: NavItem[] = [

@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 
 import Modal from '@/components/admin/Modal';
 import QuantitySelector from '@/components/admin/QuantitySelector';
+import { adminFetch } from '@/lib/adminFetch';
 
 interface Product {
     id: number;
@@ -245,7 +246,7 @@ export default function NewBookingPage() {
                 special_requests: bookingDetails.special_requests
             };
 
-            const res = await fetch('/api/admin/bookings', {
+            const res = await adminFetch('/api/admin/bookings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)

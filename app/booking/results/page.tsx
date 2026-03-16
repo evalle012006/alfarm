@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
@@ -18,6 +18,7 @@ interface ProductOption {
   type: string;
   category: string;
   time_slot: string;
+  pricing_unit: string;
   imageUrl?: string;
 }
 
@@ -33,7 +34,7 @@ interface AvailabilityItem {
 function BookingResultsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { state: bookingState, setSearch, incrementCart, setCartQuantity } = useBooking();
+  const { state: bookingState, setSearch, incrementCart, setCartQuantity, clearCart } = useBooking();
 
   const searchType = (searchParams.get('type') || bookingState.bookingType || 'day') as 'day' | 'overnight';
   const checkInDate = searchParams.get('check_in') || searchParams.get('date') || bookingState.checkInDate || '';
@@ -74,6 +75,15 @@ function BookingResultsContent() {
     setPhotoIndex(0);
     setLightboxOpen(true);
   };
+
+  // Clear cart when booking type changes (items from other time slots become invisible)
+  const prevSearchType = useRef(searchType);
+  useEffect(() => {
+    if (prevSearchType.current !== searchType) {
+      clearCart();
+      prevSearchType.current = searchType;
+    }
+  }, [searchType, clearCart]);
 
   // Guard: redirect if no date selected
   useEffect(() => {
@@ -218,8 +228,8 @@ function BookingResultsContent() {
     const product = products.find(p => p.id === parseInt(id));
     if (!product) return sum;
 
-    // Check if this is a per_night item (rooms) for overnight bookings
-    const isPerNight = product.type === 'room' && searchType === 'overnight';
+    // Check if this is a per_night item for overnight bookings
+    const isPerNight = product.pricing_unit === 'per_night' && searchType === 'overnight';
     const multiplier = isPerNight ? numNights : 1;
 
     return sum + (product.pricePerNight * qty * multiplier);
@@ -228,11 +238,13 @@ function BookingResultsContent() {
   const totalCost = productCost + totalEntranceFees;
 
   const handleProceed = () => {
-    // Validation: Require at least one accommodation for overnight stays
-    if (searchType === 'overnight' && totalItems === 0) {
+    // Validation: Require at least one item for all booking types
+    if (totalItems === 0) {
       setNotification({
         show: true,
-        message: 'For overnight stays, please select at least one room or accommodation.',
+        message: searchType === 'overnight'
+          ? 'For overnight stays, please select at least one room or accommodation.'
+          : 'Please select at least one item before proceeding.',
         type: 'warning'
       });
       return;
@@ -456,7 +468,7 @@ function BookingResultsContent() {
                             / {product.type === 'day-use' ? 'day' : 'night'}
                           </span>
                         </p>
-                        {product.type === 'room' && searchType === 'overnight' && numNights > 1 && (
+                        {product.pricing_unit === 'per_night' && searchType === 'overnight' && numNights > 1 && (
                           <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                             ₱{(product.pricePerNight * numNights).toLocaleString()} for {numNights} nights
                           </p>

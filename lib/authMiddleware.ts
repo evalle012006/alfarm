@@ -17,7 +17,7 @@ export interface AuthResult {
  * Extracts and verifies JWT token from request headers
  * Returns user data if valid, error otherwise
  */
-export function authenticateRequest(request: NextRequest): AuthResult {
+export async function authenticateRequest(request: NextRequest): Promise<AuthResult> {
   const authHeader = request.headers.get('authorization');
   
   if (!authHeader) {
@@ -33,7 +33,7 @@ export function authenticateRequest(request: NextRequest): AuthResult {
     return { authenticated: false, error: 'No token provided' };
   }
 
-  const decoded = verifyToken(token);
+  const decoded = await verifyToken(token);
   
   if (!decoded) {
     return { authenticated: false, error: 'Invalid or expired token' };
@@ -53,8 +53,8 @@ export function authenticateRequest(request: NextRequest): AuthResult {
  * Middleware helper to require authentication
  * Returns NextResponse error if not authenticated, null if OK
  */
-export function requireAuth(request: NextRequest): NextResponse | null {
-  const result = authenticateRequest(request);
+export async function requireAuth(request: NextRequest): Promise<NextResponse | null> {
+  const result = await authenticateRequest(request);
   
   if (!result.authenticated) {
     return NextResponse.json(
@@ -70,11 +70,11 @@ export function requireAuth(request: NextRequest): NextResponse | null {
  * Middleware helper to require specific role(s)
  * Returns NextResponse error if not authorized, null if OK
  */
-export function requireRole(
+export async function requireRole(
   request: NextRequest, 
   allowedRoles: ('admin' | 'guest' | 'root')[]
-): { response: NextResponse | null; user?: AuthenticatedUser } {
-  const result = authenticateRequest(request);
+): Promise<{ response: NextResponse | null; user?: AuthenticatedUser }> {
+  const result = await authenticateRequest(request);
   
   if (!result.authenticated) {
     return {
@@ -100,7 +100,7 @@ export function requireRole(
 /**
  * Get current user from request (returns null if not authenticated)
  */
-export function getCurrentUser(request: NextRequest): AuthenticatedUser | null {
-  const result = authenticateRequest(request);
+export async function getCurrentUser(request: NextRequest): Promise<AuthenticatedUser | null> {
+  const result = await authenticateRequest(request);
   return result.authenticated ? result.user || null : null;
 }

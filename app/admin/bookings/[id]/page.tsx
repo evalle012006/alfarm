@@ -239,6 +239,7 @@ export default function BookingDetailPage() {
                 paymentMethod={booking.payment_method}
                 totalAmount={booking.total_amount}
                 paidAmount={booking.paid_amount || 0}
+                stripePaymentIntentId={booking.stripe_payment_intent_id}
                 onRefresh={fetchBooking}
             />
 
@@ -257,7 +258,7 @@ export default function BookingDetailPage() {
             </div>
 
             {/* Section 6 — Audit Trail */}
-            <AuditTrail bookingId={booking.id} />
+            <AuditTrail entityId={booking.id} entityType="booking" />
 
             {/* Edit Modal Reuse */}
             <ProductModal

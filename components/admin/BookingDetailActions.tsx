@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Loader2, Check, UserCheck, LogOut, XCircle, Edit } from 'lucide-react';
+import { Loader2, Check, UserCheck, LogOut, XCircle, Edit, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { adminFetch } from '@/lib/adminFetch';
 
 interface BookingDetailActionsProps {
     bookingId: string | number;
@@ -22,7 +23,7 @@ export default function BookingDetailActions({
     const handleAction = async (action: string, method: string, endpoint: string, body?: any) => {
         try {
             setIsLoading(action);
-            const res = await fetch(endpoint, {
+            const res = await adminFetch(endpoint, {
                 method,
                 headers: { 'Content-Type': 'application/json' },
                 body: body ? JSON.stringify(body) : undefined,
@@ -45,6 +46,7 @@ export default function BookingDetailActions({
     const isPending = status === 'pending';
     const isConfirmed = status === 'confirmed';
     const isCheckedIn = status === 'checked_in';
+    const isCheckedOut = status === 'checked_out';
     const isCancellable = !['cancelled', 'completed', 'checked_out'].includes(status);
 
     return (
@@ -79,6 +81,17 @@ export default function BookingDetailActions({
                 >
                     {isLoading === 'checked out' ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
                     Check Out
+                </button>
+            )}
+
+            {isCheckedOut && (
+                <button
+                    onClick={() => handleAction('completed', 'PATCH', `/api/admin/bookings/${bookingId}`, { status: 'completed' })}
+                    disabled={!!isLoading}
+                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+                >
+                    {isLoading === 'completed' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                    Mark Completed
                 </button>
             )}
 

@@ -4,6 +4,7 @@ import pool from '@/lib/db';
 import { requirePermission, requireAnyPermission } from '@/lib/rbac';
 import { handleUnexpectedError, ErrorResponses } from '@/lib/apiErrors';
 import { logAuditWithRequest, AuditActions, EntityTypes, createSnapshot } from '@/lib/audit';
+import { stripe } from '@/lib/stripe';
 
 /**
  * Payment operations
@@ -51,10 +52,11 @@ const PaymentUpdateSchema = z.object({
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const bookingId = parseInt(params.id);
+    const { id } = await params;
+    const bookingId = parseInt(id);
 
     if (isNaN(bookingId)) {
       return ErrorResponses.validationError('Invalid booking ID');
@@ -77,7 +79,8 @@ export async function PATCH(
 
     // Get current booking state
     const existingResult = await pool.query(
-      `SELECT id, status, payment_status, total_amount, guest_first_name, guest_last_name, notes
+      `SELECT id, status, payment_status, payment_method, total_amount, paid_amount,
+              stripe_payment_intent_id, guest_first_name, guest_last_name, notes
        FROM bookings WHERE id = $1`,
       [bookingId]
     );
@@ -127,6 +130,35 @@ export async function PATCH(
         if (booking.payment_status === 'voided') {
           return ErrorResponses.validationError('Cannot refund a voided payment');
         }
+
+        // If this was a Stripe payment, issue refund via Stripe API
+        if (booking.stripe_payment_intent_id && stripe) {
+          try {
+            const refund = await stripe.refunds.create({
+              payment_intent: booking.stripe_payment_intent_id,
+              // v1: full refund only (no amount = full refund)
+            });
+            // Record Stripe refund in payment_transactions
+            await pool.query(
+              `INSERT INTO payment_transactions (booking_id, type, amount, payment_method, stripe_payment_intent_id, stripe_refund_id, created_by, notes)
+               VALUES ($1, 'refund', $2, 'stripe', $3, $4, $5, $6)`,
+              [
+                bookingId,
+                parseFloat(booking.total_amount),
+                booking.stripe_payment_intent_id,
+                refund.id,
+                check.user.id,
+                notes || `Stripe refund issued by admin`,
+              ]
+            );
+          } catch (stripeError: any) {
+            console.error('Stripe refund failed:', stripeError);
+            return ErrorResponses.validationError(
+              `Stripe refund failed: ${stripeError.message || 'Unknown error'}`
+            );
+          }
+        }
+
         newPaymentStatus = 'refunded';
         break;
 
@@ -139,14 +171,26 @@ export async function PATCH(
       ? (booking.notes ? `${booking.notes}\n[${new Date().toISOString()}] ${operation}: ${notes}` : `[${new Date().toISOString()}] ${operation}: ${notes}`)
       : booking.notes;
 
+    // Calculate new paid_amount
+    const currentPaid = parseFloat(booking.paid_amount) || 0;
+    let newPaidAmount = currentPaid;
+    if (operation === 'collect') {
+      newPaidAmount = currentPaid + (amount || parseFloat(booking.total_amount));
+    } else if (operation === 'void') {
+      newPaidAmount = 0;
+    } else if (operation === 'refund') {
+      newPaidAmount = 0;
+    }
+
     const result = await pool.query(
       `UPDATE bookings 
        SET payment_status = $1,
-           notes = $2,
+           paid_amount = $2,
+           notes = $3,
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $3
-       RETURNING id, payment_status, notes, updated_at`,
-      [newPaymentStatus, updateNotes, bookingId]
+       WHERE id = $4
+       RETURNING id, payment_status, paid_amount, notes, updated_at`,
+      [newPaymentStatus, newPaidAmount, updateNotes, bookingId]
     );
 
     const updatedBooking = result.rows[0];

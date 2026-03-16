@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomUUID } from 'crypto';
 import pool from '@/lib/db';
 import { requirePermission } from '@/lib/rbac';
-import { handleUnexpectedError } from '@/lib/apiErrors';
+import { handleUnexpectedError, ErrorResponses } from '@/lib/apiErrors';
+import { sanitizeSearch } from '@/lib/sanitize';
+import { parsePagination, buildPaginationResponse } from '@/lib/pagination';
+import { logAuditWithRequest, AuditActions, EntityTypes } from '@/lib/audit';
 
 // GET - List all bookings (admin only)
 export async function GET(request: NextRequest) {
@@ -13,9 +17,13 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const status = searchParams.get('status');
     const date = searchParams.get('date');
-    const search = searchParams.get('search');
-    const limit = parseInt(searchParams.get('limit') || '50');
-    const offset = parseInt(searchParams.get('offset') || '0');
+    const search = sanitizeSearch(searchParams.get('search'));
+    const { limit, offset } = parsePagination({
+      limit: searchParams.get('limit'),
+      offset: searchParams.get('offset'),
+      page: searchParams.get('page'),
+      per_page: searchParams.get('per_page'),
+    });
 
     let query = `
       SELECT 
@@ -131,20 +139,11 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       bookings,
-      pagination: {
-        total: totalCount,
-        limit,
-        offset,
-        has_more: offset + bookings.length < totalCount,
-      },
+      pagination: buildPaginationResponse(totalCount, limit, offset),
     });
 
   } catch (error) {
-    console.error('Error fetching bookings:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch bookings' },
-      { status: 500 }
-    );
+    return handleUnexpectedError(error);
   }
 }
 
@@ -171,18 +170,98 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Basic validation
-    if (!guest_info || !booking_date || !items || items.length === 0) {
-      return NextResponse.json(
-        { error: 'Missing required booking information' },
-        { status: 400 }
-      );
+    if (!guest_info || !guest_info.first_name || !guest_info.last_name || !guest_info.email || !guest_info.phone) {
+      return ErrorResponses.validationError('Missing required guest information');
+    }
+    if (!booking_date || !items || items.length === 0) {
+      return ErrorResponses.validationError('Missing required booking information (date and items)');
     }
 
     const type = booking_type || 'day';
 
+    if (type === 'overnight' && !check_out_date) {
+      return ErrorResponses.validationError('Check-out date is required for overnight bookings');
+    }
+
     await client.query('BEGIN');
 
-    // Find or create user
+    // ============================================
+    // STEP 1: LOCK PRODUCTS AND VALIDATE INVENTORY
+    // FOR UPDATE prevents concurrent overselling
+    // ============================================
+    const lockedProducts = new Map<number, any>();
+
+    for (const item of items) {
+      const productLock = await client.query(
+        `SELECT id, name, price, pricing_unit, inventory_count, is_active
+         FROM products
+         WHERE id = $1
+         FOR UPDATE`,
+        [item.product_id]
+      );
+
+      if (productLock.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return ErrorResponses.notFound(`Product with ID ${item.product_id} not found`);
+      }
+
+      const product = productLock.rows[0];
+      lockedProducts.set(item.product_id, product);
+
+      if (!product.is_active) {
+        await client.query('ROLLBACK');
+        return ErrorResponses.conflict(`Product "${product.name}" is currently unavailable`);
+      }
+    }
+
+    // ============================================
+    // STEP 2: CHECK AVAILABILITY WITH DATE OVERLAP
+    // ============================================
+    for (const item of items) {
+      const product = lockedProducts.get(item.product_id)!;
+
+      const availQuery = type === 'overnight' && check_out_date
+        ? `
+          SELECT COALESCE(SUM(bi.quantity), 0)::int as booked
+          FROM booking_items bi
+          INNER JOIN bookings b ON bi.booking_id = b.id
+          WHERE bi.product_id = $1
+            AND b.status NOT IN ('cancelled', 'completed')
+            AND b.booking_date < $3::date
+            AND COALESCE(b.check_out_date, b.booking_date + INTERVAL '1 day') > $2::date
+        `
+        : `
+          SELECT COALESCE(SUM(bi.quantity), 0)::int as booked
+          FROM booking_items bi
+          INNER JOIN bookings b ON bi.booking_id = b.id
+          WHERE bi.product_id = $1
+            AND b.status NOT IN ('cancelled', 'completed')
+            AND (
+              (b.booking_type = 'day' AND b.booking_date = $2::date)
+              OR (b.booking_type = 'overnight' AND b.booking_date <= $2::date AND b.check_out_date > $2::date)
+            )
+        `;
+
+      const availParams = type === 'overnight' && check_out_date
+        ? [item.product_id, booking_date, check_out_date]
+        : [item.product_id, booking_date];
+
+      const availRes = await client.query(availQuery, availParams);
+      const booked = availRes.rows[0]?.booked || 0;
+      const remaining = product.inventory_count - booked;
+
+      if (remaining < item.quantity) {
+        await client.query('ROLLBACK');
+        return ErrorResponses.insufficientInventory(
+          `"${product.name}" is not available in the requested quantity. ` +
+          `Available: ${remaining}, Requested: ${item.quantity}`
+        );
+      }
+    }
+
+    // ============================================
+    // STEP 3: FIND OR CREATE USER
+    // ============================================
     let userId = null;
     const userRes = await client.query(
       'SELECT id FROM users WHERE email = $1',
@@ -207,7 +286,9 @@ export async function POST(request: NextRequest) {
       userId = newUser.rows[0].id;
     }
 
-    // Calculate nights
+    // ============================================
+    // STEP 4: CALCULATE NIGHTS
+    // ============================================
     let numNights = 1;
     if (type === 'overnight' && check_out_date) {
       const checkIn = new Date(booking_date);
@@ -215,14 +296,18 @@ export async function POST(request: NextRequest) {
       numNights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
     }
 
-    // Create booking
+    // ============================================
+    // STEP 5: CREATE BOOKING HEADER
+    // ============================================
+    const qrCodeHash = randomUUID();
+
     const bookingRes = await client.query(
       `INSERT INTO bookings (
         user_id, 
         guest_first_name, guest_last_name, guest_email, guest_phone,
         booking_date, check_out_date, booking_time, booking_type,
-        status, payment_status, special_requests, total_amount
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 0)
+        status, payment_status, special_requests, qr_code_hash, total_amount
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 0)
       RETURNING id`,
       [
         userId,
@@ -236,25 +321,20 @@ export async function POST(request: NextRequest) {
         type,
         initialStatus || 'confirmed', // Admin bookings default to confirmed
         payment_status || 'unpaid',
-        special_requests || null
+        special_requests || null,
+        qrCodeHash,
       ]
     );
     const bookingId = bookingRes.rows[0].id;
 
-    // Insert items
+    // ============================================
+    // STEP 6: INSERT BOOKING ITEMS (using locked product data)
+    // ============================================
     let totalAmount = 0;
     for (const item of items) {
-      const productRes = await client.query(
-        'SELECT price, pricing_unit FROM products WHERE id = $1',
-        [item.product_id]
-      );
-
-      if (productRes.rows.length === 0) {
-        throw new Error(`Product ${item.product_id} not found`);
-      }
-
-      const price = parseFloat(productRes.rows[0].price);
-      const pricingUnit = productRes.rows[0].pricing_unit;
+      const product = lockedProducts.get(item.product_id)!;
+      const price = parseFloat(product.price);
+      const pricingUnit = product.pricing_unit;
 
       let subtotal: number;
       if (pricingUnit === 'per_night' && type === 'overnight') {
@@ -273,7 +353,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update total
+    // ============================================
+    // STEP 7: UPDATE TOTAL AND COMMIT
+    // ============================================
     await client.query(
       'UPDATE bookings SET total_amount = $1 WHERE id = $2',
       [totalAmount, bookingId]
@@ -281,17 +363,38 @@ export async function POST(request: NextRequest) {
 
     await client.query('COMMIT');
 
+    // ============================================
+    // STEP 8: AUDIT LOG
+    // ============================================
+    logAuditWithRequest(request, {
+      actorUserId: check.user.id,
+      actorEmail: check.user.email,
+      action: AuditActions.BOOKING_CREATE,
+      entityType: EntityTypes.BOOKING,
+      entityId: bookingId,
+      metadata: {
+        bookingType: type,
+        bookingDate: booking_date,
+        checkOutDate: check_out_date || null,
+        guestName: `${guest_info.first_name} ${guest_info.last_name}`,
+        guestEmail: guest_info.email,
+        totalAmount,
+        itemCount: items.length,
+        status: initialStatus || 'confirmed',
+      },
+    }).catch((err) => console.error('Audit log failed:', err));
+
     return NextResponse.json({
       booking_id: bookingId,
       message: 'Booking created successfully',
       total_amount: totalAmount,
+      qr_code_hash: qrCodeHash,
     }, { status: 201 });
 
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Admin booking creation error:', error);
-    const message = error instanceof Error ? error.message : 'Failed to create booking';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return handleUnexpectedError(error);
   } finally {
     client.release();
   }

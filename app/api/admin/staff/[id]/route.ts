@@ -32,14 +32,15 @@ const UpdateStaffSchema = z.object({
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   // RBAC: Require staff:read permission
   const check = await requirePermission(request, 'staff:read');
   if (!check.authorized) return check.response;
 
   try {
-    const staffId = parseInt(params.id);
+    const { id } = await params;
+    const staffId = parseInt(id);
 
     if (isNaN(staffId)) {
       return ErrorResponses.validationError('Invalid staff ID');
@@ -87,14 +88,15 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   // RBAC: Require staff:manage permission
   const check = await requirePermission(request, 'staff:manage');
   if (!check.authorized) return check.response;
 
   try {
-    const staffId = parseInt(params.id);
+    const { id } = await params;
+    const staffId = parseInt(id);
 
     if (isNaN(staffId)) {
       return ErrorResponses.validationError('Invalid staff ID');

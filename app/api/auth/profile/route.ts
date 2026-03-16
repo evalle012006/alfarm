@@ -27,7 +27,7 @@ const ProfileUpdateSchema = z.object({
 });
 
 export async function PATCH(request: NextRequest) {
-    const user = getCurrentUser(request);
+    const user = await getCurrentUser(request);
 
     if (!user) {
         return ErrorResponses.unauthorized();

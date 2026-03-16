@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import QRCode from 'react-qr-code';
 import Navigation from '@/components/Navigation';
@@ -40,13 +40,15 @@ interface BookingDetail {
   created_at: string;
 }
 
-export default function BookingSuccessPage() {
+function BookingSuccessContent() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isAuthenticated } = useAuth();
   const qrRef = useRef<HTMLDivElement>(null);
 
   const bookingId = params?.id ? Number(params.id) : NaN;
+  const hashParam = searchParams.get('hash') || '';
 
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState<BookingDetail | null>(null);
@@ -63,7 +65,11 @@ export default function BookingSuccessPage() {
     async function loadBooking() {
       try {
         setLoading(true);
-        const res = await fetch(`/api/bookings/${bookingId}`);
+        const hashQuery = hashParam ? `?hash=${encodeURIComponent(hashParam)}` : '';
+        const token = localStorage.getItem('alfarm_token');
+        const res = await fetch(`/api/bookings/${bookingId}${hashQuery}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
         if (res.ok) {
           const data = await res.json();
           setBooking(data);
@@ -86,7 +92,7 @@ export default function BookingSuccessPage() {
     }
 
     loadBooking();
-  }, [bookingId, router]);
+  }, [bookingId, hashParam, router]);
 
   const handleDownloadQR = () => {
     if (!qrRef.current) return;
@@ -134,9 +140,12 @@ export default function BookingSuccessPage() {
       case 'gcash': return 'GCash';
       case 'paymaya': return 'PayMaya';
       case 'cash': return 'Cash on Arrival';
+      case 'stripe': return 'Paid Online';
       default: return method;
     }
   };
+
+  const isStripePaid = booking?.payment_method === 'stripe' && booking?.payment_status === 'paid';
 
   return (
     <>
@@ -159,13 +168,16 @@ export default function BookingSuccessPage() {
               </svg>
             </div>
             <h1 className="text-3xl md:text-4xl font-bold text-accent dark:text-white mb-3">
-              Booking Confirmed!
+              {isStripePaid ? 'Booking Confirmed & Paid!' : 'Booking Submitted!'}
             </h1>
             <div className="max-w-2xl mx-auto mb-4">
               <BookingStepper current="done" />
             </div>
             <p className="text-lg text-gray-600 dark:text-gray-300">
-              Your reservation <span className="font-bold text-primary">#{bookingId}</span> has been created successfully.
+              {isStripePaid
+                ? <>Your reservation <span className="font-bold text-primary">#{bookingId}</span> is confirmed. Payment received &mdash; you&apos;re all set!</>
+                : <>Your reservation <span className="font-bold text-primary">#{bookingId}</span> has been created successfully.</>
+              }
             </p>
           </div>
         </div>
@@ -413,5 +425,17 @@ export default function BookingSuccessPage() {
 
       <Footer />
     </>
+  );
+}
+
+export default function BookingSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    }>
+      <BookingSuccessContent />
+    </Suspense>
   );
 }

@@ -1,22 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { requirePermission } from '@/lib/rbac';
-import { handleUnexpectedError } from '@/lib/apiErrors';
+import { handleUnexpectedError, ErrorResponses } from '@/lib/apiErrors';
+import { logAuditWithRequest, AuditActions, EntityTypes, createSnapshot } from '@/lib/audit';
 
 // GET - Get single booking details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   // RBAC: Require bookings:read permission
   const check = await requirePermission(request, 'bookings:read');
   if (!check.authorized) return check.response;
 
   try {
-    const bookingId = parseInt(params.id);
+    const { id } = await params;
+    const bookingId = parseInt(id);
 
     if (isNaN(bookingId)) {
-      return NextResponse.json({ error: 'Invalid booking ID' }, { status: 400 });
+      return ErrorResponses.validationError('Invalid booking ID');
     }
 
     const result = await pool.query(
@@ -45,7 +47,7 @@ export async function GET(
     );
 
     if (result.rows.length === 0) {
-      return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+      return ErrorResponses.notFound('Booking not found');
     }
 
     const booking = result.rows[0];
@@ -61,28 +63,25 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error('Error fetching booking:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch booking' },
-      { status: 500 }
-    );
+    return handleUnexpectedError(error);
   }
 }
 
 // PATCH - Update booking status/details
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   // RBAC: Require bookings:update permission
   const check = await requirePermission(request, 'bookings:update');
   if (!check.authorized) return check.response;
 
   try {
-    const bookingId = parseInt(params.id);
+    const { id } = await params;
+    const bookingId = parseInt(id);
 
     if (isNaN(bookingId)) {
-      return NextResponse.json({ error: 'Invalid booking ID' }, { status: 400 });
+      return ErrorResponses.validationError('Invalid booking ID');
     }
 
     const body = await request.json();
@@ -104,45 +103,36 @@ export async function PATCH(
     // Validate status values
     const validStatuses = ['pending', 'confirmed', 'checked_in', 'checked_out', 'completed', 'cancelled'];
     const validPaymentStatuses = ['unpaid', 'partial', 'paid', 'voided', 'refunded'];
-    const validPaymentMethods = ['cash', 'gcash', 'paymaya'];
+    const validPaymentMethods = ['cash', 'gcash', 'paymaya', 'stripe'];
     const validBookingTypes = ['day', 'overnight'];
 
     if (status && !validStatuses.includes(status)) {
-      return NextResponse.json(
-        { error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` },
-        { status: 400 }
-      );
+      return ErrorResponses.validationError(`Invalid status. Must be one of: ${validStatuses.join(', ')}`);
     }
 
     if (payment_status && !validPaymentStatuses.includes(payment_status)) {
-      return NextResponse.json(
-        { error: `Invalid payment status. Must be one of: ${validPaymentStatuses.join(', ')}` },
-        { status: 400 }
-      );
+      return ErrorResponses.validationError(`Invalid payment status. Must be one of: ${validPaymentStatuses.join(', ')}`);
     }
 
     if (payment_method && !validPaymentMethods.includes(payment_method)) {
-      return NextResponse.json(
-        { error: `Invalid payment method. Must be one of: ${validPaymentMethods.join(', ')}` },
-        { status: 400 }
-      );
+      return ErrorResponses.validationError(`Invalid payment method. Must be one of: ${validPaymentMethods.join(', ')}`);
     }
 
     if (booking_type && !validBookingTypes.includes(booking_type)) {
-      return NextResponse.json(
-        { error: `Invalid booking type. Must be one of: ${validBookingTypes.join(', ')}` },
-        { status: 400 }
-      );
+      return ErrorResponses.validationError(`Invalid booking type. Must be one of: ${validBookingTypes.join(', ')}`);
     }
 
-    // Check booking exists
+    // Check booking exists and capture current state for audit
     const existingBooking = await pool.query(
-      'SELECT id, status FROM bookings WHERE id = $1',
+      `SELECT id, status, payment_status, payment_method, booking_type,
+              booking_date, check_out_date, guest_first_name, guest_last_name,
+              guest_email, guest_phone, special_requests, notes
+       FROM bookings WHERE id = $1`,
       [bookingId]
     );
 
     if (existingBooking.rows.length === 0) {
-      return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+      return ErrorResponses.notFound('Booking not found');
     }
 
     // Build update query dynamically
@@ -223,10 +213,7 @@ export async function PATCH(
     }
 
     if (updates.length === 0) {
-      return NextResponse.json(
-        { error: 'No valid fields to update' },
-        { status: 400 }
-      );
+      return ErrorResponses.validationError('No valid fields to update');
     }
 
     updates.push(`updated_at = CURRENT_TIMESTAMP`);
@@ -240,39 +227,80 @@ export async function PATCH(
     `;
 
     const result = await pool.query(updateQuery, values);
+    const updatedBooking = result.rows[0];
+    const beforeBooking = existingBooking.rows[0];
+
+    // Build before/after snapshot from only the changed fields
+    const changedFields: Record<string, unknown> = {};
+    const beforeFields: Record<string, unknown> = {};
+    const fieldMap: Record<string, string> = {
+      status: 'status', payment_status: 'payment_status', payment_method: 'payment_method',
+      guest_first_name: 'guest_first_name', guest_last_name: 'guest_last_name',
+      guest_email: 'guest_email', guest_phone: 'guest_phone',
+      booking_date: 'booking_date', check_out_date: 'check_out_date',
+      booking_type: 'booking_type', special_requests: 'special_requests', notes: 'notes',
+    };
+    for (const [bodyKey, dbKey] of Object.entries(fieldMap)) {
+      if (body[bodyKey] !== undefined) {
+        beforeFields[dbKey] = beforeBooking[dbKey];
+        changedFields[dbKey] = updatedBooking[dbKey];
+      }
+    }
+
+    // Audit log (fire-and-forget)
+    logAuditWithRequest(request, {
+      actorUserId: check.user.id,
+      actorEmail: check.user.email,
+      action: AuditActions.BOOKING_UPDATE,
+      entityType: EntityTypes.BOOKING,
+      entityId: bookingId,
+      metadata: {
+        ...createSnapshot(beforeFields, changedFields),
+        guestName: `${updatedBooking.guest_first_name} ${updatedBooking.guest_last_name}`,
+      },
+    }).catch((err) => console.error('Audit log failed:', err));
 
     return NextResponse.json({
       message: 'Booking updated successfully',
       booking: {
-        ...result.rows[0],
-        total_amount: parseFloat(result.rows[0].total_amount),
+        ...updatedBooking,
+        total_amount: parseFloat(updatedBooking.total_amount),
       },
     });
 
   } catch (error) {
-    console.error('Error updating booking:', error);
-    return NextResponse.json(
-      { error: 'Failed to update booking' },
-      { status: 500 }
-    );
+    return handleUnexpectedError(error);
   }
 }
 
 // DELETE - Cancel/delete booking
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   // RBAC: Require bookings:cancel permission
   const check = await requirePermission(request, 'bookings:cancel');
   if (!check.authorized) return check.response;
 
   try {
-    const bookingId = parseInt(params.id);
+    const { id } = await params;
+    const bookingId = parseInt(id);
 
     if (isNaN(bookingId)) {
-      return NextResponse.json({ error: 'Invalid booking ID' }, { status: 400 });
+      return ErrorResponses.validationError('Invalid booking ID');
     }
+
+    // Get current status for audit snapshot
+    const existingBooking = await pool.query(
+      'SELECT id, status, guest_first_name, guest_last_name FROM bookings WHERE id = $1',
+      [bookingId]
+    );
+
+    if (existingBooking.rows.length === 0) {
+      return ErrorResponses.notFound('Booking not found');
+    }
+
+    const previousStatus = existingBooking.rows[0].status;
 
     // Soft delete - just mark as cancelled
     const result = await pool.query(
@@ -283,9 +311,22 @@ export async function DELETE(
       [bookingId]
     );
 
-    if (result.rows.length === 0) {
-      return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
-    }
+    // Audit log (fire-and-forget)
+    logAuditWithRequest(request, {
+      actorUserId: check.user.id,
+      actorEmail: check.user.email,
+      action: AuditActions.BOOKING_CANCEL,
+      entityType: EntityTypes.BOOKING,
+      entityId: bookingId,
+      metadata: {
+        ...createSnapshot(
+          { status: previousStatus },
+          { status: 'cancelled' }
+        ),
+        guestName: `${existingBooking.rows[0].guest_first_name} ${existingBooking.rows[0].guest_last_name}`,
+        cancelledBy: 'admin',
+      },
+    }).catch((err) => console.error('Audit log failed:', err));
 
     return NextResponse.json({
       message: 'Booking cancelled successfully',
@@ -293,10 +334,6 @@ export async function DELETE(
     });
 
   } catch (error) {
-    console.error('Error cancelling booking:', error);
-    return NextResponse.json(
-      { error: 'Failed to cancel booking' },
-      { status: 500 }
-    );
+    return handleUnexpectedError(error);
   }
 }

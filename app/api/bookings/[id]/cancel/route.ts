@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import { handleUnexpectedError } from '@/lib/apiErrors';
+import { handleUnexpectedError, ErrorResponses } from '@/lib/apiErrors';
 import { authenticateRequest } from '@/lib/authMiddleware';
 import { logAuditWithRequest, AuditActions, EntityTypes } from '@/lib/audit';
+import { checkRateLimit, RateLimitPresets } from '@/lib/rateLimit';
+import { sendBookingCancellationEmail } from '@/lib/email';
 
 /**
  * POST /api/bookings/[id]/cancel
@@ -11,21 +13,23 @@ import { logAuditWithRequest, AuditActions, EntityTypes } from '@/lib/audit';
  */
 export async function POST(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const bookingId = parseInt(params.id);
+        // Rate limit: 5 cancellations per hour
+        const rateLimited = checkRateLimit(request, RateLimitPresets.cancellation.limit, RateLimitPresets.cancellation.windowMs);
+        if (rateLimited) return rateLimited;
+
+        const { id } = await params;
+        const bookingId = parseInt(id);
         if (isNaN(bookingId) || bookingId < 1) {
-            return NextResponse.json({ error: 'Invalid booking ID' }, { status: 400 });
+            return ErrorResponses.validationError('Invalid booking ID');
         }
 
         // Authenticate the user
-        const authResult = authenticateRequest(request);
+        const authResult = await authenticateRequest(request);
         if (!authResult.authenticated || !authResult.user) {
-            return NextResponse.json(
-                { error: authResult.error || 'Unauthorized' },
-                { status: 401 }
-            );
+            return ErrorResponses.authenticationRequired(authResult.error || 'Unauthorized');
         }
 
         // Check if the user owns the booking
@@ -35,22 +39,19 @@ export async function POST(
         );
 
         if (bookingCheck.rows.length === 0) {
-            return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+            return ErrorResponses.notFound('Booking not found');
         }
 
         const booking = bookingCheck.rows[0];
 
         // Verify ownership
         if (booking.user_id !== authResult.user.id) {
-            return NextResponse.json({ error: 'Forbidden: You do not own this booking' }, { status: 403 });
+            return ErrorResponses.forbidden('You do not own this booking');
         }
 
         // Must be pending
         if (booking.status !== 'pending') {
-            return NextResponse.json(
-                { error: 'Only pending bookings can be cancelled by the user' },
-                { status: 400 }
-            );
+            return ErrorResponses.validationError('Only pending bookings can be cancelled by the user');
         }
 
         // Parse body for optional reason
@@ -82,6 +83,28 @@ export async function POST(
                 newStatus: 'cancelled'
             }
         });
+
+        // Fire-and-forget cancellation email
+        const bookingDetails = await pool.query(
+            `SELECT b.*, u.email as user_email
+             FROM bookings b
+             LEFT JOIN users u ON b.user_id = u.id
+             WHERE b.id = $1`,
+            [bookingId]
+        );
+        if (bookingDetails.rows.length > 0) {
+            const b = bookingDetails.rows[0];
+            const email = b.guest_email || b.user_email;
+            if (email) {
+                sendBookingCancellationEmail({
+                    to: email,
+                    guestName: `${b.guest_first_name || ''} ${b.guest_last_name || ''}`.trim() || 'Guest',
+                    bookingId: b.id,
+                    bookingDate: b.booking_date,
+                    reason: reason,
+                }).catch((err: unknown) => console.error('Failed to send cancellation email:', err));
+            }
+        }
 
         return NextResponse.json({ message: 'Booking cancelled successfully' });
 

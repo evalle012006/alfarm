@@ -5,7 +5,7 @@ import pool from '@/lib/db';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
-  const authResult = authenticateRequest(request);
+  const authResult = await authenticateRequest(request);
 
   if (!authResult.authenticated || !authResult.user) {
     return NextResponse.json(

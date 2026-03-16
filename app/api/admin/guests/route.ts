@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { requirePermission } from '@/lib/rbac';
 import { handleUnexpectedError } from '@/lib/apiErrors';
+import { sanitizeSearch } from '@/lib/sanitize';
+import { parsePagination, buildPaginationResponse } from '@/lib/pagination';
 
 // GET - List all guest users with booking stats
 export async function GET(request: NextRequest) {
@@ -11,13 +13,14 @@ export async function GET(request: NextRequest) {
 
     try {
         const searchParams = request.nextUrl.searchParams;
-        const search = searchParams.get('search');
+        const search = sanitizeSearch(searchParams.get('search'));
         const sort = searchParams.get('sort') || 'newest';
-        const limit = parseInt(searchParams.get('limit') || '20');
-        const offset = parseInt(searchParams.get('offset') || '0');
-
-        // Shadow account hash pattern from implementation
-        const shadowHash = '$2a$10$placeholderHashForGuestCheckout................';
+        const { limit, offset } = parsePagination({
+            limit: searchParams.get('limit'),
+            offset: searchParams.get('offset'),
+            page: searchParams.get('page'),
+            per_page: searchParams.get('per_page'),
+        });
 
         let query = `
       SELECT 
@@ -29,7 +32,7 @@ export async function GET(request: NextRequest) {
         u.role, 
         u.is_active as "isActive", 
         u.created_at as "createdAt",
-        (u.password = $1) as "isShadow",
+        COALESCE(u.is_shadow, FALSE) as "isShadow",
         COUNT(b.id)::int as "totalBookings",
         MAX(b.booking_date) as "lastBookingDate",
         COALESCE(SUM(b.total_amount), 0)::float as "totalSpent"
@@ -38,8 +41,8 @@ export async function GET(request: NextRequest) {
       WHERE u.role = 'guest'
     `;
 
-        const params: any[] = [shadowHash];
-        let paramIndex = 2;
+        const params: any[] = [];
+        let paramIndex = 1;
 
         if (search) {
             query += ` AND (
@@ -85,15 +88,10 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
             guests: result.rows,
-            pagination: {
-                total: totalCount,
-                limit,
-                offset,
-                hasMore: offset + result.rows.length < totalCount
-            }
+            pagination: buildPaginationResponse(totalCount, limit, offset),
         });
 
     } catch (error) {
-        return handleUnexpectedError(error, 'Failed to fetch guests');
+        return handleUnexpectedError(error);
     }
 }

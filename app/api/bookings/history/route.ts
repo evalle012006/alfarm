@@ -4,7 +4,7 @@ import { authenticateRequest } from '@/lib/authMiddleware';
 
 export async function GET(request: NextRequest) {
   // Authenticate the request
-  const authResult = authenticateRequest(request);
+  const authResult = await authenticateRequest(request);
 
   if (!authResult.authenticated || !authResult.user) {
     return NextResponse.json(
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     let paramIndex = 2;
 
     // Filter by status if provided
-    if (status && ['pending', 'confirmed', 'checked_in', 'completed', 'cancelled'].includes(status)) {
+    if (status && ['pending', 'confirmed', 'checked_in', 'checked_out', 'completed', 'cancelled'].includes(status)) {
       query += ` AND b.status = $${paramIndex}`;
       params.push(status);
       paramIndex++;

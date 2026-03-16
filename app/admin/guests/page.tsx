@@ -3,80 +3,88 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
     Search,
-    User,
     Mail,
     Phone,
     Calendar,
     Users,
-    Filter,
     ChevronRight,
-    GraduationCap,
     Clock,
     DollarSign,
-    MoreVertical,
     History
 } from 'lucide-react';
 import { format } from 'date-fns';
 import Pagination from '@/components/admin/Pagination';
 import Modal from '@/components/admin/Modal';
-import StatusBadge from '@/components/admin/StatusBadge';
-import { mockGuests, type MockGuest } from '@/lib/mockData/adminMockData';
+import { adminFetch } from '@/lib/adminFetch';
 import { toast } from 'sonner';
+
+interface Guest {
+    id: number;
+    email: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    role: string;
+    isActive: boolean;
+    createdAt: string;
+    isShadow: boolean;
+    totalBookings: number;
+    lastBookingDate: string | null;
+    totalSpent: number;
+}
 
 export default function GuestManagementPage() {
     // State
-    const [guests, setGuests] = useState<MockGuest[]>([]);
+    const [guests, setGuests] = useState<Guest[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [sort, setSort] = useState('newest');
     const [page, setPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
-    const [selectedGuest, setSelectedGuest] = useState<MockGuest | null>(null);
+    const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
     const limit = 20;
 
-    // Fetch guests (mocked for now, easily switch to API)
+    // Debounce search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(search);
+            setPage(1);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [search]);
+
+    // Fetch guests from real API
     const fetchGuests = useCallback(async () => {
         setIsLoading(true);
         try {
-            // Simulate API delay
-            await new Promise(resolve => setTimeout(resolve, 500));
+            const params = new URLSearchParams();
+            if (debouncedSearch) params.set('search', debouncedSearch);
+            params.set('sort', sort);
+            params.set('page', String(page));
+            params.set('per_page', String(limit));
 
-            // Filtering logic
-            let filtered = [...mockGuests];
-            if (search) {
-                const s = search.toLowerCase();
-                filtered = filtered.filter(g =>
-                    g.firstName.toLowerCase().includes(s) ||
-                    g.lastName.toLowerCase().includes(s) ||
-                    g.email.toLowerCase().includes(s) ||
-                    g.phone.includes(s)
-                );
-            }
+            const res = await adminFetch(`/api/admin/guests?${params.toString()}`);
+            if (!res.ok) throw new Error('Failed to fetch guests');
+            const data = await res.json();
 
-            // Sorting
-            filtered.sort((a, b) => {
-                if (sort === 'bookings') return b.totalBookings - a.totalBookings;
-                if (sort === 'alpha') return (a.lastName + a.firstName).localeCompare(b.lastName + b.firstName);
-                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-            });
-
-            setTotalCount(filtered.length);
-            setGuests(filtered.slice((page - 1) * limit, page * limit));
+            setGuests(data.guests || []);
+            setTotalCount(data.pagination?.total || 0);
         } catch (error) {
-            toast.error("Failed to load guests");
+            toast.error('Failed to load guests');
         } finally {
             setIsLoading(false);
         }
-    }, [search, sort, page]);
+    }, [debouncedSearch, sort, page]);
 
     useEffect(() => {
         fetchGuests();
     }, [fetchGuests]);
 
     // Handlers
-    const handleViewDetails = (guest: MockGuest) => {
+    const handleViewDetails = (guest: Guest) => {
         setSelectedGuest(guest);
         setIsDetailModalOpen(true);
     };
@@ -300,7 +308,7 @@ export default function GuestManagementPage() {
                         {/* History Note */}
                         <div className="p-6 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-900/20 text-center">
                             <p className="text-sm text-blue-700 dark:text-blue-400">
-                                Full booking ledger and loyalty analytics coming in Phase 4.
+                                Full booking history and detailed analytics coming soon.
                             </p>
                         </div>
 

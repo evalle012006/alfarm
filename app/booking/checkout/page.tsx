@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import PrimaryButton from '@/components/ui/PrimaryButton';
@@ -18,17 +18,23 @@ interface ProductOption {
   description: string;
   type: string;
   category: string;
+  pricing_unit: string;
 }
 
-type FeeKind = 'adult' | 'child';
-
-export default function BookingCheckoutPage() {
+function BookingCheckoutContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { state, setPaymentMethod, setConfirmation, reset } = useBooking();
   const { token } = useAuth();
 
+  const stripeEnabled = !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+
   const [products, setProducts] = useState<ProductOption[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [entranceFees, setEntranceFees] = useState<{
+    day: { adult: { id: number; price: number } | null; child: { id: number; price: number } | null };
+    night: { adult: { id: number; price: number } | null; child: { id: number; price: number } | null };
+  } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -45,6 +51,17 @@ export default function BookingCheckoutPage() {
       (new Date(state.checkOutDate).getTime() - new Date(state.checkInDate).getTime()) / (1000 * 60 * 60 * 24)
     );
   }, [state.bookingType, state.checkInDate, state.checkOutDate]);
+
+  // Show notification if returning from cancelled Stripe checkout
+  useEffect(() => {
+    if (searchParams.get('cancelled') === 'true') {
+      setNotification({
+        show: true,
+        message: 'Payment was cancelled. You can try again or choose a different payment method.',
+        type: 'warning',
+      });
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     // Skip guards after successful booking (redirect is in progress)
@@ -92,27 +109,21 @@ export default function BookingCheckoutPage() {
     }
 
     fetchProducts();
+
+    fetch('/api/products/entrance-fees')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => { if (data) setEntranceFees(data); })
+      .catch(() => { });
   }, []);
 
   const fees = useMemo(() => {
-    const isNight = state.bookingType === 'overnight';
-
-    const match = (kind: FeeKind) => {
-      const token = kind === 'adult' ? 'Adult Entrance' : 'Kid Entrance';
-      const slotToken = isNight ? '(Night)' : '(Day)';
-      return products.find(
-        (p) => p.category.includes('Entrance') && p.title.includes(token) && p.title.includes(slotToken)
-      );
-    };
-
-    const adult = match('adult');
-    const child = match('child');
-
+    if (!entranceFees) return { adult: null, child: null };
+    const slot = state.bookingType === 'overnight' ? entranceFees.night : entranceFees.day;
     return {
-      adult,
-      child,
+      adult: slot.adult ? { id: slot.adult.id, title: 'Adult Entrance Fee', pricePerNight: slot.adult.price } : null,
+      child: slot.child ? { id: slot.child.id, title: 'Kid Entrance Fee', pricePerNight: slot.child.price } : null,
     };
-  }, [products, state.bookingType]);
+  }, [entranceFees, state.bookingType]);
 
   const lineItems = useMemo(() => {
     const items: Array<{ id: number; title: string; qty: number; unit: number; subtotal: number; kind: 'cart' | 'fee' }> = [];
@@ -121,7 +132,7 @@ export default function BookingCheckoutPage() {
       const p = products.find((x) => x.id === item.product_id);
       if (!p) continue;
 
-      const isPerNight = p.type === 'room' && state.bookingType === 'overnight';
+      const isPerNight = p.pricing_unit === 'per_night' && state.bookingType === 'overnight';
       const multiplier = isPerNight ? numNights : 1;
       const subtotal = p.pricePerNight * item.quantity * multiplier;
 
@@ -158,7 +169,7 @@ export default function BookingCheckoutPage() {
     }
 
     return items;
-  }, [cartItems, fees.adult, fees.child, numNights, products, state.adults, state.bookingType, state.children]);
+  }, [cartItems, fees, numNights, products, state.adults, state.bookingType, state.children]);
 
   const totalAmount = useMemo(() => lineItems.reduce((sum, li) => sum + li.subtotal, 0), [lineItems]);
 
@@ -181,7 +192,7 @@ export default function BookingCheckoutPage() {
     try {
       setIsSubmitting(true);
 
-      const payload = {
+      const basePayload = {
         guest_info: {
           first_name: state.guestInfo.firstName,
           last_name: state.guestInfo.lastName,
@@ -193,16 +204,39 @@ export default function BookingCheckoutPage() {
         booking_type: state.bookingType,
         items: lineItems.map((li) => ({ product_id: li.id, quantity: li.qty })),
         special_requests: state.specialRequests || null,
-        payment_method: state.paymentMethod,
       };
 
+      if (state.paymentMethod === 'stripe') {
+        // ── Stripe flow: create booking + checkout session, then redirect ──
+        const res = await fetch('/api/bookings/checkout-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify(basePayload),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data?.error || 'Failed to create checkout session');
+        }
+
+        // Redirect to Stripe hosted checkout page
+        // Note: we do NOT reset state here — if the user cancels on Stripe,
+        // they return to this page with their cart intact
+        window.location.href = data.checkout_url;
+        return; // Don't setIsSubmitting(false) — page is navigating away
+      }
+
+      // ── Cash/manual flow: create booking directly ──
       const res = await fetch('/api/bookings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...basePayload, payment_method: state.paymentMethod }),
       });
 
       const data = await res.json();
@@ -215,10 +249,11 @@ export default function BookingCheckoutPage() {
       setBookingSuccess(true);
       setShowConfirmModal(false);
 
-      // Immediate redirect to success page
+      // Immediate redirect to success page with hash for secure access
       const successBookingId = data.booking_id;
+      const successHash = data.qr_code_hash || '';
       reset({ keepSearch: true });
-      router.push(`/booking/success/${successBookingId}`);
+      router.push(`/booking/success/${successBookingId}?hash=${successHash}`);
     } catch (err) {
       setNotification({
         show: true,
@@ -281,7 +316,39 @@ export default function BookingCheckoutPage() {
                   </div>
                 </div>
 
-                <div className="grid md:grid-cols-3 gap-4">
+                <div className={`grid gap-4 ${stripeEnabled ? 'md:grid-cols-2' : 'md:grid-cols-1'}`}>
+                  {stripeEnabled && (
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('stripe')}
+                      className={`group relative p-5 rounded-2xl border-2 text-left transition-all duration-300 ${state.paymentMethod === 'stripe'
+                        ? 'border-primary bg-gradient-to-br from-primary/10 to-primary/5 shadow-lg shadow-primary/20 scale-105'
+                        : 'border-gray-200 bg-white hover:border-primary/50 hover:shadow-md dark:bg-slate-800 dark:border-slate-700 dark:hover:border-primary/50'
+                        }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${state.paymentMethod === 'stripe'
+                          ? 'bg-primary text-white'
+                          : 'bg-gray-100 text-gray-400 group-hover:bg-primary/10 group-hover:text-primary dark:bg-slate-700'
+                          }`}>
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-bold text-accent dark:text-white mb-1">Pay Online</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">Credit/Debit Card &middot; Secure checkout</div>
+                        </div>
+                      </div>
+                      {state.paymentMethod === 'stripe' && (
+                        <div className="absolute top-3 right-3">
+                          <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('cash')}
@@ -305,66 +372,6 @@ export default function BookingCheckoutPage() {
                       </div>
                     </div>
                     {state.paymentMethod === 'cash' && (
-                      <div className="absolute top-3 right-3">
-                        <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('gcash')}
-                    className={`group relative p-5 rounded-2xl border-2 text-left transition-all duration-300 ${state.paymentMethod === 'gcash'
-                      ? 'border-primary bg-gradient-to-br from-primary/10 to-primary/5 shadow-lg shadow-primary/20 scale-105'
-                      : 'border-gray-200 bg-white hover:border-primary/50 hover:shadow-md dark:bg-slate-800 dark:border-slate-700 dark:hover:border-primary/50'
-                      }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${state.paymentMethod === 'gcash'
-                        ? 'bg-primary text-white'
-                        : 'bg-gray-100 text-gray-400 group-hover:bg-primary/10 group-hover:text-primary dark:bg-slate-700'
-                        }`}>
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                        </svg>
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-bold text-accent dark:text-white mb-1">GCash</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">Demo payment</div>
-                      </div>
-                    </div>
-                    {state.paymentMethod === 'gcash' && (
-                      <div className="absolute top-3 right-3">
-                        <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('paymaya')}
-                    className={`group relative p-5 rounded-2xl border-2 text-left transition-all duration-300 ${state.paymentMethod === 'paymaya'
-                      ? 'border-primary bg-gradient-to-br from-primary/10 to-primary/5 shadow-lg shadow-primary/20 scale-105'
-                      : 'border-gray-200 bg-white hover:border-primary/50 hover:shadow-md dark:bg-slate-800 dark:border-slate-700 dark:hover:border-primary/50'
-                      }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${state.paymentMethod === 'paymaya'
-                        ? 'bg-primary text-white'
-                        : 'bg-gray-100 text-gray-400 group-hover:bg-primary/10 group-hover:text-primary dark:bg-slate-700'
-                        }`}>
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                        </svg>
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-bold text-accent dark:text-white mb-1">PayMaya</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">Demo payment</div>
-                      </div>
-                    </div>
-                    {state.paymentMethod === 'paymaya' && (
                       <div className="absolute top-3 right-3">
                         <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -632,7 +639,7 @@ export default function BookingCheckoutPage() {
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-300">Payment:</span>
                 <span className="font-semibold text-accent dark:text-white capitalize">
-                  {state.paymentMethod === 'cash' ? 'Cash on Arrival' : state.paymentMethod}
+                  {state.paymentMethod === 'cash' ? 'Cash on Arrival' : state.paymentMethod === 'stripe' ? 'Pay Online' : state.paymentMethod}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -703,5 +710,17 @@ export default function BookingCheckoutPage() {
         </div>
       )}
     </>
+  );
+}
+
+export default function BookingCheckoutPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    }>
+      <BookingCheckoutContent />
+    </Suspense>
   );
 }

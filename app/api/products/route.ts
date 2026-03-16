@@ -63,6 +63,7 @@ export async function GET(request: NextRequest) {
         type: type,
         category: row.category_name,
         time_slot: row.time_slot,
+        pricing_unit: row.pricing_unit,
         imageUrl: row.image_url,
       };
     });

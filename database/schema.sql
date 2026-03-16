@@ -53,8 +53,11 @@ CREATE TABLE IF NOT EXISTS bookings (
     booking_type VARCHAR(20) DEFAULT 'day' CHECK (booking_type IN ('day', 'overnight')),
     status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'checked_in', 'checked_out', 'completed', 'cancelled')),
     payment_status VARCHAR(20) DEFAULT 'unpaid' CHECK (payment_status IN ('unpaid', 'partial', 'paid', 'voided', 'refunded')),
-    payment_method VARCHAR(20) DEFAULT 'cash' CHECK (payment_method IN ('cash', 'gcash', 'paymaya')),
+    payment_method VARCHAR(20) DEFAULT 'cash' CHECK (payment_method IN ('cash', 'gcash', 'paymaya', 'stripe')),
     total_amount DECIMAL(10, 2) NOT NULL,
+    paid_amount DECIMAL(10, 2) DEFAULT 0,
+    stripe_checkout_session_id VARCHAR(255),
+    stripe_payment_intent_id VARCHAR(255),
     qr_code_hash VARCHAR(255), -- Unique identifier for the QR code
     special_requests TEXT,
     checked_in_at TIMESTAMP, -- When guest checked in
@@ -85,6 +88,8 @@ CREATE INDEX idx_bookings_date ON bookings(booking_date);
 CREATE INDEX idx_bookings_checkout ON bookings(check_out_date);
 CREATE INDEX idx_bookings_email ON bookings(guest_email);
 CREATE INDEX idx_bookings_type ON bookings(booking_type);
+CREATE INDEX idx_bookings_stripe_session ON bookings(stripe_checkout_session_id);
+CREATE INDEX idx_bookings_stripe_pi ON bookings(stripe_payment_intent_id);
 
 -- Seed Data: Categories
 INSERT INTO categories (name, description) VALUES
@@ -134,6 +139,23 @@ INSERT INTO products (category_id, name, price, pricing_unit, time_slot, invento
 ((SELECT id FROM cats WHERE name='Amenities'), 'Horseback Ride', 50.00, 'fixed', 'day', 10, 1),
 ((SELECT id FROM cats WHERE name='Amenities'), 'Cave Tour', 50.00, 'per_head', 'day', 100, 1)
 ON CONFLICT (name) DO NOTHING;
+
+-- Payment Transactions Ledger
+CREATE TABLE IF NOT EXISTS payment_transactions (
+    id BIGSERIAL PRIMARY KEY,
+    booking_id INT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+    type VARCHAR(20) NOT NULL CHECK (type IN ('charge', 'refund', 'void')),
+    amount DECIMAL(10, 2) NOT NULL,
+    payment_method VARCHAR(20) NOT NULL,
+    stripe_payment_intent_id VARCHAR(255),
+    stripe_refund_id VARCHAR(255),
+    notes TEXT,
+    created_by INT REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_payment_tx_booking ON payment_transactions(booking_id);
+CREATE INDEX idx_payment_tx_stripe_pi ON payment_transactions(stripe_payment_intent_id);
 
 -- Audit Logs Table (Phase 3)
 CREATE TABLE IF NOT EXISTS audit_logs (

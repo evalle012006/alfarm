@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Loader2, IndianRupee, RotateCcw, Ban, Wallet } from 'lucide-react';
+import { Loader2, IndianRupee, RotateCcw, Ban, Wallet, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import StatusBadge from './StatusBadge';
 import Modal from './Modal';
+import { adminFetch } from '@/lib/adminFetch';
 
 interface PaymentCardProps {
     bookingId: string | number;
@@ -12,6 +13,7 @@ interface PaymentCardProps {
     paymentMethod: string;
     totalAmount: number;
     paidAmount: number;
+    stripePaymentIntentId?: string | null;
     onRefresh: () => void;
 }
 
@@ -21,6 +23,7 @@ export default function PaymentCard({
     paymentMethod,
     totalAmount,
     paidAmount,
+    stripePaymentIntentId,
     onRefresh,
 }: PaymentCardProps) {
     const [isLoading, setIsLoading] = useState<string | null>(null);
@@ -31,7 +34,7 @@ export default function PaymentCard({
     const handlePaymentOperation = async (operation: string, body?: any) => {
         try {
             setIsLoading(operation);
-            const res = await fetch(`/api/admin/bookings/${bookingId}/payment`, {
+            const res = await adminFetch(`/api/admin/bookings/${bookingId}/payment`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ operation, ...body }),
@@ -55,6 +58,7 @@ export default function PaymentCard({
     const isUnpaid = paymentStatus === 'unpaid';
     const isPartial = paymentStatus === 'partial';
     const isPaid = paymentStatus === 'paid';
+    const isStripe = paymentMethod === 'stripe';
 
     return (
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 p-6 shadow-sm">
@@ -70,7 +74,12 @@ export default function PaymentCard({
                 </div>
                 <div className="flex items-center gap-3">
                     <StatusBadge status={paymentStatus} />
-                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 px-3 py-1 rounded-full uppercase tracking-wider">
+                    <span className={`text-sm font-medium px-3 py-1 rounded-full uppercase tracking-wider ${
+                        isStripe
+                            ? 'text-indigo-700 bg-indigo-50 dark:text-indigo-400 dark:bg-indigo-900/20'
+                            : 'text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-slate-800'
+                    }`}>
+                        {isStripe && <CreditCard className="w-3.5 h-3.5 inline mr-1 -mt-0.5" />}
                         {paymentMethod || 'N/A'}
                     </span>
                 </div>
@@ -92,7 +101,7 @@ export default function PaymentCard({
             </div>
 
             <div className="flex flex-wrap gap-3">
-                {(isUnpaid || isPartial) && (
+                {(isUnpaid || isPartial) && !isStripe && (
                     <button
                         onClick={() => setIsCollectModalOpen(true)}
                         disabled={!!isLoading}

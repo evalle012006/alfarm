@@ -31,7 +31,7 @@ const BookingPayloadSchema = z.object({
   guest_info: GuestInfoSchema,
   items: z.array(BookingItemSchema).min(1, 'At least one item is required'),
   special_requests: z.string().max(1000).optional().nullable(),
-  payment_method: z.enum(['cash', 'gcash', 'paymaya']).default('cash'),
+  payment_method: z.enum(['cash', 'gcash', 'paymaya', 'stripe']).default('cash'),
 }).refine(
   (data) => {
     // Overnight bookings must have check_out_date
@@ -231,7 +231,7 @@ export async function POST(request: NextRequest) {
     // ============================================
     // STEP 3: IDENTIFY USER (AUTHENTICATED OR SHADOW ACCOUNT)
     // ============================================
-    const authenticatedUser = getCurrentUser(request);
+    const authenticatedUser = await getCurrentUser(request);
     let userId = authenticatedUser?.id || null;
 
     if (!userId) {

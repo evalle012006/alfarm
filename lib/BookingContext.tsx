@@ -18,7 +18,7 @@ export interface BookingGuestInfo {
   children: number;
 }
 
-export type DemoPaymentMethod = 'cash' | 'gcash' | 'paymaya';
+export type PaymentMethod = 'cash' | 'gcash' | 'paymaya' | 'stripe';
 
 export interface BookingState {
   bookingType: BookingType;
@@ -29,7 +29,7 @@ export interface BookingState {
   cart: Record<number, number>;
   guestInfo: BookingGuestInfo | null;
   specialRequests: string;
-  paymentMethod: DemoPaymentMethod;
+  paymentMethod: PaymentMethod;
   lastBookingId: number | null;
   lastBookingTotalAmount: number | null;
 }
@@ -58,7 +58,7 @@ interface BookingContextValue {
   clearCart: () => void;
   setGuestInfo: (info: BookingGuestInfo) => void;
   setSpecialRequests: (value: string) => void;
-  setPaymentMethod: (value: DemoPaymentMethod) => void;
+  setPaymentMethod: (value: PaymentMethod) => void;
   setConfirmation: (input: { bookingId: number; totalAmount: number }) => void;
   reset: (options?: { keepSearch?: boolean }) => void;
 }

@@ -233,9 +233,7 @@ export default function BookingEditModal({ isOpen, onClose, booking, onSave }: B
                                 value={formData.payment_method}
                                 onChange={e => setFormData({ ...formData, payment_method: e.target.value })}
                             >
-                                <option value="cash">Cash</option>
-                                <option value="gcash">GCash</option>
-                                <option value="paymaya">PayMaya</option>
+                                <option value="paymongo">PayMongo (Online)</option>
                             </select>
                         </div>
                     </div>

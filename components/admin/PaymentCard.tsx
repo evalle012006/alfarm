@@ -1,10 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Loader2, IndianRupee, RotateCcw, Ban, Wallet, CreditCard } from 'lucide-react';
+import { Loader2, RotateCcw, Ban, CreditCard, Banknote } from 'lucide-react';
 import { toast } from 'sonner';
 import StatusBadge from './StatusBadge';
-import Modal from './Modal';
 import { adminFetch } from '@/lib/adminFetch';
 
 interface PaymentCardProps {
@@ -13,7 +12,7 @@ interface PaymentCardProps {
     paymentMethod: string;
     totalAmount: number;
     paidAmount: number;
-    stripePaymentIntentId?: string | null;
+    paymongoPaymentId?: string | null;
     onRefresh: () => void;
 }
 
@@ -23,13 +22,10 @@ export default function PaymentCard({
     paymentMethod,
     totalAmount,
     paidAmount,
-    stripePaymentIntentId,
+    paymongoPaymentId,
     onRefresh,
 }: PaymentCardProps) {
     const [isLoading, setIsLoading] = useState<string | null>(null);
-    const [isCollectModalOpen, setIsCollectModalOpen] = useState(false);
-    const [collectAmount, setCollectAmount] = useState<number>(totalAmount - paidAmount);
-    const [collectNotes, setCollectNotes] = useState('');
 
     const handlePaymentOperation = async (operation: string, body?: any) => {
         try {
@@ -46,7 +42,6 @@ export default function PaymentCard({
             }
 
             toast.success(`Payment ${operation}ed successfully`);
-            setIsCollectModalOpen(false);
             onRefresh();
         } catch (error: any) {
             toast.error(error.message);
@@ -58,14 +53,14 @@ export default function PaymentCard({
     const isUnpaid = paymentStatus === 'unpaid';
     const isPartial = paymentStatus === 'partial';
     const isPaid = paymentStatus === 'paid';
-    const isStripe = paymentMethod === 'stripe';
+    const balanceDue = totalAmount - paidAmount;
 
     return (
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 p-6 shadow-sm">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-green-50 dark:bg-green-900/20 flex items-center justify-center text-green-600">
-                        <Wallet className="w-6 h-6" />
+                        <CreditCard className="w-6 h-6" />
                     </div>
                     <div>
                         <h3 className="text-lg font-bold text-accent dark:text-white">Payment Details</h3>
@@ -74,13 +69,9 @@ export default function PaymentCard({
                 </div>
                 <div className="flex items-center gap-3">
                     <StatusBadge status={paymentStatus} />
-                    <span className={`text-sm font-medium px-3 py-1 rounded-full uppercase tracking-wider ${
-                        isStripe
-                            ? 'text-indigo-700 bg-indigo-50 dark:text-indigo-400 dark:bg-indigo-900/20'
-                            : 'text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-slate-800'
-                    }`}>
-                        {isStripe && <CreditCard className="w-3.5 h-3.5 inline mr-1 -mt-0.5" />}
-                        {paymentMethod || 'N/A'}
+                    <span className="text-sm font-medium px-3 py-1 rounded-full uppercase tracking-wider text-indigo-700 bg-indigo-50 dark:text-indigo-400 dark:bg-indigo-900/20">
+                        <CreditCard className="w-3.5 h-3.5 inline mr-1 -mt-0.5" />
+                        Online Payment
                     </span>
                 </div>
             </div>
@@ -96,22 +87,27 @@ export default function PaymentCard({
                 </div>
                 <div className="p-4 rounded-xl bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/20">
                     <p className="text-xs font-semibold text-orange-600 uppercase mb-1">Balance Due</p>
-                    <p className="text-2xl font-bold text-orange-700 dark:text-orange-500">₱{(totalAmount - paidAmount).toLocaleString()}</p>
+                    <p className="text-2xl font-bold text-orange-700 dark:text-orange-500">₱{balanceDue.toLocaleString()}</p>
                 </div>
             </div>
 
             <div className="flex flex-wrap gap-3">
-                {(isUnpaid || isPartial) && !isStripe && (
+                {/* Collect Payment — shown for unpaid and partial bookings */}
+                {(isUnpaid || isPartial) && (
                     <button
-                        onClick={() => setIsCollectModalOpen(true)}
+                        onClick={() => {
+                            if (confirm(`Collect full remaining balance of ₱${balanceDue.toLocaleString()}?`)) {
+                                handlePaymentOperation('collect', { amount: balanceDue });
+                            }
+                        }}
                         disabled={!!isLoading}
-                        className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 shadow-sm"
+                        className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-semibold text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 dark:bg-green-900/10 dark:border-green-800 dark:text-green-400 disabled:opacity-50"
                     >
-                        {isLoading === 'collect' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wallet className="w-4 h-4" />}
+                        {isLoading === 'collect' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Banknote className="w-4 h-4" />}
                         Collect Payment
                     </button>
                 )}
-
+                {/* Void & Refund — shown for paid and partial bookings */}
                 {(isPaid || isPartial) && (
                     <>
                         <button
@@ -142,51 +138,6 @@ export default function PaymentCard({
                 )}
             </div>
 
-            {/* Collect Payment Modal */}
-            <Modal
-                isOpen={isCollectModalOpen}
-                onClose={() => setIsCollectModalOpen(false)}
-                title="Collect Payment"
-                size="sm"
-            >
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Amount to Collect (₱)</label>
-                        <input
-                            type="number"
-                            value={collectAmount}
-                            onChange={(e) => setCollectAmount(Number(e.target.value))}
-                            max={totalAmount - paidAmount}
-                            className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:border-primary outline-none"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes</label>
-                        <textarea
-                            value={collectNotes}
-                            onChange={(e) => setCollectNotes(e.currentTarget.value)}
-                            rows={3}
-                            className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:border-primary outline-none"
-                            placeholder="Internal notes about this collection..."
-                        />
-                    </div>
-                    <div className="flex gap-3 pt-4">
-                        <button
-                            onClick={() => setIsCollectModalOpen(false)}
-                            className="flex-1 px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 dark:bg-slate-800 dark:text-gray-200 dark:hover:bg-slate-700"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            onClick={() => handlePaymentOperation('collect', { amount: collectAmount, notes: collectNotes })}
-                            disabled={!!isLoading || collectAmount <= 0}
-                            className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-green-600 rounded-xl hover:bg-green-700 disabled:opacity-50"
-                        >
-                            {isLoading === 'collect' ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirm Collection'}
-                        </button>
-                    </div>
-                </div>
-            </Modal>
         </div>
     );
 }

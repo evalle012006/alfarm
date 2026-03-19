@@ -103,7 +103,7 @@ export async function PATCH(
     // Validate status values
     const validStatuses = ['pending', 'confirmed', 'checked_in', 'checked_out', 'completed', 'cancelled'];
     const validPaymentStatuses = ['unpaid', 'partial', 'paid', 'voided', 'refunded'];
-    const validPaymentMethods = ['cash', 'gcash', 'paymaya', 'stripe'];
+    const validPaymentMethods = ['paymongo'];
     const validBookingTypes = ['day', 'overnight'];
 
     if (status && !validStatuses.includes(status)) {
@@ -133,6 +133,26 @@ export async function PATCH(
 
     if (existingBooking.rows.length === 0) {
       return ErrorResponses.notFound('Booking not found');
+    }
+
+    // Validate status transition if status is being changed
+    if (status) {
+      const currentStatus = existingBooking.rows[0].status;
+      const allowedTransitions: Record<string, string[]> = {
+        pending:     ['confirmed', 'cancelled'],
+        confirmed:   ['checked_in', 'cancelled'],
+        checked_in:  ['checked_out', 'cancelled'],
+        checked_out: ['completed', 'cancelled'],
+        completed:   [],          // terminal state
+        cancelled:   ['pending'], // allow reactivation only to pending
+      };
+
+      const allowed = allowedTransitions[currentStatus] || [];
+      if (status !== currentStatus && !allowed.includes(status)) {
+        return ErrorResponses.validationError(
+          `Cannot transition from '${currentStatus}' to '${status}'. Allowed transitions: ${allowed.length ? allowed.join(', ') : 'none (terminal state)'}`
+        );
+      }
     }
 
     // Build update query dynamically

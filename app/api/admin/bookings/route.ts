@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import pool from '@/lib/db';
 import { requirePermission } from '@/lib/rbac';
@@ -6,6 +7,7 @@ import { handleUnexpectedError, ErrorResponses } from '@/lib/apiErrors';
 import { sanitizeSearch } from '@/lib/sanitize';
 import { parsePagination, buildPaginationResponse } from '@/lib/pagination';
 import { logAuditWithRequest, AuditActions, EntityTypes } from '@/lib/audit';
+import { AdminBookingPayloadSchema, type AdminBookingPayload } from '@/lib/validation/bookingSchemas';
 
 // GET - List all bookings (admin only)
 export async function GET(request: NextRequest) {
@@ -153,36 +155,33 @@ export async function POST(request: NextRequest) {
   const check = await requirePermission(request, 'bookings:create');
   if (!check.authorized) return check.response;
 
+  // Validate input with Zod
+  let body: AdminBookingPayload;
+  try {
+    const rawBody = await request.json();
+    body = AdminBookingPayloadSchema.parse(rawBody);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return ErrorResponses.validationError('Invalid booking data', error.issues);
+    }
+    return ErrorResponses.validationError('Invalid JSON in request body');
+  }
+
+  const {
+    guest_info,
+    booking_date,
+    check_out_date,
+    booking_time,
+    booking_type: type,
+    items,
+    status: initialStatus,
+    payment_status,
+    special_requests,
+  } = body;
+
   const client = await pool.connect();
 
   try {
-    const body = await request.json();
-    const {
-      guest_info,
-      booking_date,
-      check_out_date,
-      booking_time,
-      booking_type,
-      items,
-      status: initialStatus,
-      payment_status,
-      special_requests,
-    } = body;
-
-    // Basic validation
-    if (!guest_info || !guest_info.first_name || !guest_info.last_name || !guest_info.email || !guest_info.phone) {
-      return ErrorResponses.validationError('Missing required guest information');
-    }
-    if (!booking_date || !items || items.length === 0) {
-      return ErrorResponses.validationError('Missing required booking information (date and items)');
-    }
-
-    const type = booking_type || 'day';
-
-    if (type === 'overnight' && !check_out_date) {
-      return ErrorResponses.validationError('Check-out date is required for overnight bookings');
-    }
-
     await client.query('BEGIN');
 
     // ============================================
@@ -260,31 +259,24 @@ export async function POST(request: NextRequest) {
     }
 
     // ============================================
-    // STEP 3: FIND OR CREATE USER
+    // STEP 3: FIND OR CREATE USER (atomic upsert)
+    // INSERT ... ON CONFLICT avoids race conditions when two concurrent
+    // bookings use the same guest email.
     // ============================================
-    let userId = null;
-    const userRes = await client.query(
-      'SELECT id FROM users WHERE email = $1',
-      [guest_info.email]
+    const upsertRes = await client.query(
+      `INSERT INTO users (email, password, first_name, last_name, phone, role, is_shadow)
+       VALUES ($1, $2, $3, $4, $5, 'guest', TRUE)
+       ON CONFLICT (email) DO UPDATE SET email = EXCLUDED.email
+       RETURNING id`,
+      [
+        guest_info.email,
+        '$2a$10$placeholderHashForGuestCheckout................',
+        guest_info.first_name,
+        guest_info.last_name,
+        guest_info.phone
+      ]
     );
-
-    if (userRes.rows.length > 0) {
-      userId = userRes.rows[0].id;
-    } else {
-      const newUser = await client.query(
-        `INSERT INTO users (email, password, first_name, last_name, phone, role)
-         VALUES ($1, $2, $3, $4, $5, 'guest')
-         RETURNING id`,
-        [
-          guest_info.email,
-          '$2a$10$placeholderHashForGuestCheckout................',
-          guest_info.first_name,
-          guest_info.last_name,
-          guest_info.phone
-        ]
-      );
-      userId = newUser.rows[0].id;
-    }
+    const userId = upsertRes.rows[0].id;
 
     // ============================================
     // STEP 4: CALCULATE NIGHTS

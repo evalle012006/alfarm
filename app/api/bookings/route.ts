@@ -6,88 +6,7 @@ import { sendBookingConfirmationEmail } from '@/lib/email';
 import { checkRateLimit, RateLimitPresets } from '@/lib/rateLimit';
 import { ErrorResponses, handleUnexpectedError } from '@/lib/apiErrors';
 import { getCurrentUser } from '@/lib/authMiddleware';
-
-/**
- * Zod schema for booking creation payload
- * Validates all input before processing
- */
-const BookingItemSchema = z.object({
-  product_id: z.number().int().positive(),
-  quantity: z.number().int().min(1).max(100),
-});
-
-const GuestInfoSchema = z.object({
-  first_name: z.string().trim().min(1, 'First name is required'),
-  last_name: z.string().trim().min(1, 'Last name is required'),
-  email: z.string().email('Valid email address is required'),
-  phone: z.string().trim().min(7, 'Valid phone number is required (minimum 7 digits)'),
-});
-
-const BookingPayloadSchema = z.object({
-  booking_type: z.enum(['day', 'overnight']),
-  booking_date: z.string().datetime({ message: 'Invalid booking date format' }).or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)),
-  check_out_date: z.string().datetime().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional().nullable(),
-  booking_time: z.string().optional().nullable(),
-  guest_info: GuestInfoSchema,
-  items: z.array(BookingItemSchema).min(1, 'At least one item is required'),
-  special_requests: z.string().max(1000).optional().nullable(),
-  payment_method: z.enum(['cash', 'gcash', 'paymaya', 'stripe']).default('cash'),
-}).refine(
-  (data) => {
-    // Overnight bookings must have check_out_date
-    if (data.booking_type === 'overnight') {
-      return !!data.check_out_date;
-    }
-    return true;
-  },
-  {
-    message: 'Check-out date is required for overnight bookings',
-    path: ['check_out_date'],
-  }
-).refine(
-  (data) => {
-    // Check-out must be after check-in for overnight
-    if (data.booking_type === 'overnight' && data.check_out_date) {
-      const checkIn = new Date(data.booking_date);
-      const checkOut = new Date(data.check_out_date);
-      return checkOut > checkIn;
-    }
-    return true;
-  },
-  {
-    message: 'Check-out date must be after check-in date',
-    path: ['check_out_date'],
-  }
-).refine(
-  (data) => {
-    // Booking date cannot be in the past
-    const bookingDate = new Date(data.booking_date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return bookingDate >= today;
-  },
-  {
-    message: 'Booking date cannot be in the past',
-    path: ['booking_date'],
-  }
-).refine(
-  (data) => {
-    // Max stay validation (30 nights)
-    if (data.booking_type === 'overnight' && data.check_out_date) {
-      const checkIn = new Date(data.booking_date);
-      const checkOut = new Date(data.check_out_date);
-      const stayDays = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
-      return stayDays <= 30;
-    }
-    return true;
-  },
-  {
-    message: 'Maximum stay is 30 nights',
-    path: ['check_out_date'],
-  }
-);
-
-type BookingPayload = z.infer<typeof BookingPayloadSchema>;
+import { GuestBookingPayloadSchema, type GuestBookingPayload } from '@/lib/validation/bookingSchemas';
 
 /**
  * POST /api/bookings
@@ -116,11 +35,11 @@ export async function POST(request: NextRequest) {
   // ============================================
   // INPUT VALIDATION (Zod)
   // ============================================
-  let body: BookingPayload;
+  let body: GuestBookingPayload;
 
   try {
     const rawBody = await request.json();
-    body = BookingPayloadSchema.parse(rawBody);
+    body = GuestBookingPayloadSchema.parse(rawBody);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return ErrorResponses.validationError(
@@ -235,29 +154,23 @@ export async function POST(request: NextRequest) {
     let userId = authenticatedUser?.id || null;
 
     if (!userId) {
-      // Not authenticated, search for existing guest by email or create shadow account
-      const userRes = await client.query(
-        'SELECT id FROM users WHERE email = $1',
-        [guest_info.email]
+      // Not authenticated — find or create shadow account atomically.
+      // INSERT ... ON CONFLICT avoids race conditions when two concurrent
+      // bookings use the same guest email.
+      const upsertRes = await client.query(
+        `INSERT INTO users (email, password, first_name, last_name, phone, role, is_shadow)
+         VALUES ($1, $2, $3, $4, $5, 'guest', TRUE)
+         ON CONFLICT (email) DO UPDATE SET email = EXCLUDED.email
+         RETURNING id`,
+        [
+          guest_info.email,
+          '$2a$10$placeholderHashForGuestCheckout................',
+          guest_info.first_name,
+          guest_info.last_name,
+          guest_info.phone
+        ]
       );
-
-      if (userRes.rows.length > 0) {
-        userId = userRes.rows[0].id;
-      } else {
-        const newUser = await client.query(
-          `INSERT INTO users (email, password, first_name, last_name, phone, role)
-           VALUES ($1, $2, $3, $4, $5, 'guest')
-           RETURNING id`,
-          [
-            guest_info.email,
-            '$2a$10$placeholderHashForGuestCheckout................',
-            guest_info.first_name,
-            guest_info.last_name,
-            guest_info.phone
-          ]
-        );
-        userId = newUser.rows[0].id;
-      }
+      userId = upsertRes.rows[0].id;
     }
 
     // ============================================
@@ -341,7 +254,7 @@ export async function POST(request: NextRequest) {
     // ============================================
     // STEP 8: SEND CONFIRMATION EMAIL (NON-BLOCKING)
     // ============================================
-    const itemsForEmail = items.map((item) => {
+    const itemsForEmail = items.map((item: { product_id: number; quantity: number }) => {
       const product = lockedProducts.get(item.product_id)!;
       const price = parseFloat(product.price);
       const isPerNight = product.pricing_unit === 'per_night' && booking_type === 'overnight';

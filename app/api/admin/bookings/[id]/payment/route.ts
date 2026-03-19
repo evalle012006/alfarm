@@ -4,7 +4,7 @@ import pool from '@/lib/db';
 import { requirePermission, requireAnyPermission } from '@/lib/rbac';
 import { handleUnexpectedError, ErrorResponses } from '@/lib/apiErrors';
 import { logAuditWithRequest, AuditActions, EntityTypes, createSnapshot } from '@/lib/audit';
-import { stripe } from '@/lib/stripe';
+import { createRefund } from '@/lib/paymongo';
 
 /**
  * Payment operations
@@ -80,7 +80,7 @@ export async function PATCH(
     // Get current booking state
     const existingResult = await pool.query(
       `SELECT id, status, payment_status, payment_method, total_amount, paid_amount,
-              stripe_payment_intent_id, guest_first_name, guest_last_name, notes
+              paymongo_payment_id, guest_first_name, guest_last_name, notes
        FROM bookings WHERE id = $1`,
       [bookingId]
     );
@@ -131,30 +131,33 @@ export async function PATCH(
           return ErrorResponses.validationError('Cannot refund a voided payment');
         }
 
-        // If this was a Stripe payment, issue refund via Stripe API
-        if (booking.stripe_payment_intent_id && stripe) {
+        // If this was a PayMongo payment, issue refund via PayMongo API
+        if (booking.paymongo_payment_id) {
           try {
-            const refund = await stripe.refunds.create({
-              payment_intent: booking.stripe_payment_intent_id,
-              // v1: full refund only (no amount = full refund)
+            const refundAmountCentavos = Math.round(parseFloat(booking.total_amount) * 100);
+            const refund = await createRefund({
+              amount: refundAmountCentavos,
+              payment_id: booking.paymongo_payment_id,
+              reason: 'requested_by_customer',
+              notes: notes || 'Refund issued by admin',
             });
-            // Record Stripe refund in payment_transactions
+            // Record PayMongo refund in payment_transactions
             await pool.query(
-              `INSERT INTO payment_transactions (booking_id, type, amount, payment_method, stripe_payment_intent_id, stripe_refund_id, created_by, notes)
-               VALUES ($1, 'refund', $2, 'stripe', $3, $4, $5, $6)`,
+              `INSERT INTO payment_transactions (booking_id, type, amount, payment_method, paymongo_payment_id, paymongo_refund_id, created_by, notes)
+               VALUES ($1, 'refund', $2, 'paymongo', $3, $4, $5, $6)`,
               [
                 bookingId,
                 parseFloat(booking.total_amount),
-                booking.stripe_payment_intent_id,
+                booking.paymongo_payment_id,
                 refund.id,
                 check.user.id,
-                notes || `Stripe refund issued by admin`,
+                notes || `PayMongo refund issued by admin`,
               ]
             );
-          } catch (stripeError: any) {
-            console.error('Stripe refund failed:', stripeError);
+          } catch (paymongoError: any) {
+            console.error('PayMongo refund failed:', paymongoError);
             return ErrorResponses.validationError(
-              `Stripe refund failed: ${stripeError.message || 'Unknown error'}`
+              `Refund failed: ${paymongoError.message || 'Unknown error'}`
             );
           }
         }

@@ -24,7 +24,7 @@ import BookingDetailActions from '@/components/admin/BookingDetailActions';
 import PaymentCard from '@/components/admin/PaymentCard';
 import StaffNotes from '@/components/admin/StaffNotes';
 import AuditTrail from '@/components/admin/AuditTrail';
-import ProductModal from '@/components/admin/ProductModal';
+import BookingEditModal from '@/components/admin/BookingEditModal';
 
 export default function BookingDetailPage() {
     const { id } = useParams();
@@ -239,7 +239,7 @@ export default function BookingDetailPage() {
                 paymentMethod={booking.payment_method}
                 totalAmount={booking.total_amount}
                 paidAmount={booking.paid_amount || 0}
-                stripePaymentIntentId={booking.stripe_payment_intent_id}
+                paymongoPaymentId={booking.paymongo_payment_id}
                 onRefresh={fetchBooking}
             />
 
@@ -260,11 +260,12 @@ export default function BookingDetailPage() {
             {/* Section 6 — Audit Trail */}
             <AuditTrail entityId={booking.id} entityType="booking" />
 
-            {/* Edit Modal Reuse */}
-            <ProductModal
+            {/* Edit Modal */}
+            <BookingEditModal
                 isOpen={isEditModalOpen}
                 onClose={() => setIsEditModalOpen(false)}
-                product={null} // Future: adjust ProductModal to handle bookings or use a dedicated BookingModal
+                booking={booking}
+                onSave={fetchBooking}
             />
         </div>
     );

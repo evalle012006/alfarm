@@ -24,10 +24,8 @@ interface ProductOption {
 function BookingCheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { state, setPaymentMethod, setConfirmation, reset } = useBooking();
+  const { state, setConfirmation, reset } = useBooking();
   const { token } = useAuth();
-
-  const stripeEnabled = !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 
   const [products, setProducts] = useState<ProductOption[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -38,7 +36,6 @@ function BookingCheckoutContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [bookingSuccess, setBookingSuccess] = useState(false);
   const [notification, setNotification] = useState<{ show: boolean; message: string; type: NotificationType }>(
     { show: false, message: '', type: 'error' }
   );
@@ -52,21 +49,18 @@ function BookingCheckoutContent() {
     );
   }, [state.bookingType, state.checkInDate, state.checkOutDate]);
 
-  // Show notification if returning from cancelled Stripe checkout
+  // Show notification if returning from cancelled PayMongo checkout
   useEffect(() => {
     if (searchParams.get('cancelled') === 'true') {
       setNotification({
         show: true,
-        message: 'Payment was cancelled. You can try again or choose a different payment method.',
+        message: 'Payment was cancelled. You can try again.',
         type: 'warning',
       });
     }
   }, [searchParams]);
 
   useEffect(() => {
-    // Skip guards after successful booking (redirect is in progress)
-    if (bookingSuccess) return;
-
     // Guard: require previous steps
     if (!state.checkInDate) {
       router.push('/');
@@ -87,7 +81,7 @@ function BookingCheckoutContent() {
       router.push('/booking/info');
       return;
     }
-  }, [bookingSuccess, cartItems.length, router, state.bookingType, state.checkInDate, state.checkOutDate, state.guestInfo]);
+  }, [cartItems.length, router, state.bookingType, state.checkInDate, state.checkOutDate, state.guestInfo]);
 
   useEffect(() => {
     async function fetchProducts() {
@@ -206,54 +200,26 @@ function BookingCheckoutContent() {
         special_requests: state.specialRequests || null,
       };
 
-      if (state.paymentMethod === 'stripe') {
-        // ── Stripe flow: create booking + checkout session, then redirect ──
-        const res = await fetch('/api/bookings/checkout-session', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-          },
-          body: JSON.stringify(basePayload),
-        });
-
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data?.error || 'Failed to create checkout session');
-        }
-
-        // Redirect to Stripe hosted checkout page
-        // Note: we do NOT reset state here — if the user cancels on Stripe,
-        // they return to this page with their cart intact
-        window.location.href = data.checkout_url;
-        return; // Don't setIsSubmitting(false) — page is navigating away
-      }
-
-      // ── Cash/manual flow: create booking directly ──
-      const res = await fetch('/api/bookings', {
+      // ── PayMongo flow: create booking + checkout session, then redirect ──
+      const res = await fetch('/api/bookings/checkout-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
-        body: JSON.stringify({ ...basePayload, payment_method: state.paymentMethod }),
+        body: JSON.stringify(basePayload),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data?.error || 'Failed to create booking');
+        throw new Error(data?.error || 'Failed to create checkout session');
       }
 
-      setConfirmation({ bookingId: data.booking_id, totalAmount: data.total_amount });
-
-      setBookingSuccess(true);
-      setShowConfirmModal(false);
-
-      // Immediate redirect to success page with hash for secure access
-      const successBookingId = data.booking_id;
-      const successHash = data.qr_code_hash || '';
-      reset({ keepSearch: true });
-      router.push(`/booking/success/${successBookingId}?hash=${successHash}`);
+      // Redirect to PayMongo hosted checkout page
+      // Note: we do NOT reset state here — if the user cancels on PayMongo,
+      // they return to this page with their cart intact
+      window.location.href = data.checkout_url;
+      return; // Don't setIsSubmitting(false) — page is navigating away
     } catch (err) {
       setNotification({
         show: true,
@@ -302,7 +268,7 @@ function BookingCheckoutContent() {
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 flex flex-col gap-6">
-              {/* Payment Method Section */}
+              {/* Payment Method Info */}
               <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-lg hover:shadow-xl transition-shadow duration-300 p-6 md:p-8 border border-gray-100 dark:border-slate-800 order-1">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-600 flex items-center justify-center">
@@ -311,74 +277,29 @@ function BookingCheckoutContent() {
                     </svg>
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold text-accent dark:text-white">Payment Method</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Select your preferred option</p>
+                    <h2 className="text-2xl font-bold text-accent dark:text-white">Payment</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Secure online payment via PayMongo</p>
                   </div>
                 </div>
 
-                <div className={`grid gap-4 ${stripeEnabled ? 'md:grid-cols-2' : 'md:grid-cols-1'}`}>
-                  {stripeEnabled && (
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod('stripe')}
-                      className={`group relative p-5 rounded-2xl border-2 text-left transition-all duration-300 ${state.paymentMethod === 'stripe'
-                        ? 'border-primary bg-gradient-to-br from-primary/10 to-primary/5 shadow-lg shadow-primary/20 scale-105'
-                        : 'border-gray-200 bg-white hover:border-primary/50 hover:shadow-md dark:bg-slate-800 dark:border-slate-700 dark:hover:border-primary/50'
-                        }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${state.paymentMethod === 'stripe'
-                          ? 'bg-primary text-white'
-                          : 'bg-gray-100 text-gray-400 group-hover:bg-primary/10 group-hover:text-primary dark:bg-slate-700'
-                          }`}>
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                          </svg>
-                        </div>
-                        <div className="flex-1">
-                          <div className="font-bold text-accent dark:text-white mb-1">Pay Online</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">Credit/Debit Card &middot; Secure checkout</div>
-                        </div>
-                      </div>
-                      {state.paymentMethod === 'stripe' && (
-                        <div className="absolute top-3 right-3">
-                          <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                      )}
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('cash')}
-                    className={`group relative p-5 rounded-2xl border-2 text-left transition-all duration-300 ${state.paymentMethod === 'cash'
-                      ? 'border-primary bg-gradient-to-br from-primary/10 to-primary/5 shadow-lg shadow-primary/20 scale-105'
-                      : 'border-gray-200 bg-white hover:border-primary/50 hover:shadow-md dark:bg-slate-800 dark:border-slate-700 dark:hover:border-primary/50'
-                      }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${state.paymentMethod === 'cash'
-                        ? 'bg-primary text-white'
-                        : 'bg-gray-100 text-gray-400 group-hover:bg-primary/10 group-hover:text-primary dark:bg-slate-700'
-                        }`}>
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-bold text-accent dark:text-white mb-1">Cash on Arrival</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">Pay at check-in</div>
-                      </div>
+                <div className="p-5 rounded-2xl border-2 border-primary bg-gradient-to-br from-primary/10 to-primary/5 shadow-lg shadow-primary/20">
+                  <div className="flex items-start gap-3">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary text-white">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                      </svg>
                     </div>
-                    {state.paymentMethod === 'cash' && (
-                      <div className="absolute top-3 right-3">
-                        <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                    )}
-                  </button>
+                    <div className="flex-1">
+                      <div className="font-bold text-accent dark:text-white mb-1">Pay Online</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">Card &middot; GCash &middot; GrabPay &middot; Maya</div>
+                      <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">You&apos;ll be redirected to a secure payment page after confirming.</div>
+                    </div>
+                    <div>
+                      <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -639,7 +560,7 @@ function BookingCheckoutContent() {
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-300">Payment:</span>
                 <span className="font-semibold text-accent dark:text-white capitalize">
-                  {state.paymentMethod === 'cash' ? 'Cash on Arrival' : state.paymentMethod === 'stripe' ? 'Pay Online' : state.paymentMethod}
+                  Pay Online (Card / GCash / GrabPay / Maya)
                 </span>
               </div>
               <div className="flex justify-between">
@@ -693,22 +614,6 @@ function BookingCheckoutContent() {
         </div>
       )}
 
-      {/* Success Toast */}
-      {bookingSuccess && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 animate-fadeIn">
-          <div className="flex items-center gap-3 bg-white border border-green-200 shadow-xl rounded-xl px-6 py-4">
-            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900">Booking Confirmed!</p>
-              <p className="text-sm text-gray-500">Redirecting to your booking details...</p>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

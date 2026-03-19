@@ -52,6 +52,7 @@ function BookingSuccessContent() {
 
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState<BookingDetail | null>(null);
+  const [verifying, setVerifying] = useState(false);
   const [notification, setNotification] = useState<{ show: boolean; message: string; type: NotificationType }>(
     { show: false, message: '', type: 'error' }
   );
@@ -73,6 +74,11 @@ function BookingSuccessContent() {
         if (res.ok) {
           const data = await res.json();
           setBooking(data);
+
+          // If booking is paymongo + unpaid, trigger payment verification
+          if (data.payment_method === 'paymongo' && data.payment_status !== 'paid' && hashParam) {
+            verifyPayment(data);
+          }
         } else {
           setNotification({
             show: true,
@@ -92,7 +98,56 @@ function BookingSuccessContent() {
     }
 
     loadBooking();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookingId, hashParam, router]);
+
+  // Payment verification via API polling (webhook fallback)
+  const verifyPayment = async (currentBooking: BookingDetail) => {
+    if (!hashParam) return;
+    setVerifying(true);
+
+    const MAX_ATTEMPTS = 10;
+    const POLL_INTERVAL_MS = 3000;
+
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        const res = await fetch('/api/bookings/verify-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ booking_id: currentBooking.id, hash: hashParam }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.verified && data.payment_status === 'paid') {
+            // Update local booking state to reflect payment
+            setBooking((prev) => prev ? {
+              ...prev,
+              status: 'confirmed',
+              payment_status: 'paid',
+            } : prev);
+            setVerifying(false);
+            return;
+          }
+        }
+      } catch {
+        // Ignore fetch errors, will retry
+      }
+
+      // Wait before next attempt (skip wait on last attempt)
+      if (attempt < MAX_ATTEMPTS) {
+        await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+      }
+    }
+
+    // All attempts exhausted — payment may still be processing
+    setVerifying(false);
+    setNotification({
+      show: true,
+      message: 'Payment verification is taking longer than expected. Your payment may still be processing — please check back shortly or contact support.',
+      type: 'warning',
+    });
+  };
 
   const handleDownloadQR = () => {
     if (!qrRef.current) return;
@@ -137,15 +192,12 @@ function BookingSuccessContent() {
 
   const paymentMethodLabel = (method: string) => {
     switch (method) {
-      case 'gcash': return 'GCash';
-      case 'paymaya': return 'PayMaya';
-      case 'cash': return 'Cash on Arrival';
-      case 'stripe': return 'Paid Online';
+      case 'paymongo': return 'Online Payment';
       default: return method;
     }
   };
 
-  const isStripePaid = booking?.payment_method === 'stripe' && booking?.payment_status === 'paid';
+  const isPaid = booking?.payment_status === 'paid';
 
   return (
     <>
@@ -168,17 +220,24 @@ function BookingSuccessContent() {
               </svg>
             </div>
             <h1 className="text-3xl md:text-4xl font-bold text-accent dark:text-white mb-3">
-              {isStripePaid ? 'Booking Confirmed & Paid!' : 'Booking Submitted!'}
+              {isPaid ? 'Booking Confirmed & Paid!' : verifying ? 'Verifying Payment...' : 'Booking Submitted!'}
             </h1>
             <div className="max-w-2xl mx-auto mb-4">
               <BookingStepper current="done" />
             </div>
             <p className="text-lg text-gray-600 dark:text-gray-300">
-              {isStripePaid
+              {isPaid
                 ? <>Your reservation <span className="font-bold text-primary">#{bookingId}</span> is confirmed. Payment received &mdash; you&apos;re all set!</>
-                : <>Your reservation <span className="font-bold text-primary">#{bookingId}</span> has been created successfully.</>
+                : verifying
+                  ? <>Confirming payment for reservation <span className="font-bold text-primary">#{bookingId}</span>. Please wait&hellip;</>
+                  : <>Your reservation <span className="font-bold text-primary">#{bookingId}</span> has been created successfully.</>
               }
             </p>
+            {verifying && (
+              <div className="mt-4">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-200 border-t-primary"></div>
+              </div>
+            )}
           </div>
         </div>
       </section>

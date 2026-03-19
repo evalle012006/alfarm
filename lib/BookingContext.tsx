@@ -18,7 +18,7 @@ export interface BookingGuestInfo {
   children: number;
 }
 
-export type PaymentMethod = 'cash' | 'gcash' | 'paymaya' | 'stripe';
+export type PaymentMethod = 'paymongo';
 
 export interface BookingState {
   bookingType: BookingType;
@@ -45,7 +45,7 @@ const defaultState: BookingState = {
   cart: {},
   guestInfo: null,
   specialRequests: '',
-  paymentMethod: 'cash',
+  paymentMethod: 'paymongo',
   lastBookingId: null,
   lastBookingTotalAmount: null,
 };

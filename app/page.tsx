@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useBooking } from '@/lib/BookingContext';
+import Lightbox from '@/components/ui/Lightbox';
 import Image from 'next/image';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
@@ -11,7 +10,9 @@ import PrimaryButton from '@/components/ui/PrimaryButton';
 import TagToggle from '@/components/ui/TagToggle';
 import CountSelector from '@/components/ui/CountSelector';
 import Notification, { NotificationType } from '@/components/ui/Notification';
-import { useBooking } from '@/lib/BookingContext';
+import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function Home() {
   const router = useRouter();
@@ -45,7 +46,7 @@ export default function Home() {
     fetch('/api/products/entrance-fees')
       .then(res => res.ok ? res.json() : null)
       .then(data => { if (data) setEntranceFees(data); })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // Calculate Entrance Fee Estimate
@@ -169,9 +170,70 @@ export default function Home() {
     }
   ];
 
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [currentGallery, setCurrentGallery] = useState<{ name: string, images: string[] }>({ name: '', images: [] });
+  const [photoIndex, setPhotoIndex] = useState(0);
+
+  const openGallery = (name: string, images: string[], startIndex: number = 0) => {
+    setCurrentGallery({ name, images });
+    setPhotoIndex(startIndex);
+    setLightboxOpen(true);
+  };
+
+  const featuredRooms = [
+    {
+      name: 'Blue Room (AC)',
+      description: 'Modern and cool standard room with full air conditioning for a perfect rest.',
+      price: 1350,
+      images: [
+        '/images/accommodation/blue_room/blue_room_1.jpeg',
+        '/images/accommodation/blue_room/blue_room_2.jpeg',
+        '/images/accommodation/blue_room/blue_room_3.jpeg',
+        '/images/accommodation/blue_room/blue_room_4.jpeg',
+        '/images/accommodation/blue_room/blue_room_5.jpeg',
+        '/images/accommodation/blue_room/blue_room_6.jpeg',
+      ]
+    },
+    {
+      name: 'Dorm Style Cottage',
+      description: 'Perfect for large groups or families. Traditional style with massive space.',
+      price: 5000,
+      images: [
+        '/images/accommodation/dorm_style_cottage/dorm_style_cottage_1.jpeg',
+        '/images/accommodation/dorm_style_cottage/dorm_style_cottage_2.jpeg',
+        '/images/accommodation/dorm_style_cottage/dorm_style_cottage_3.jpeg',
+        '/images/accommodation/dorm_style_cottage/dorm_style_cottage_4.jpeg',
+        '/images/accommodation/dorm_style_cottage/dorm_style_cottage_5.jpeg',
+        '/images/accommodation/dorm_style_cottage/dorm_style_cottage_6.jpeg',
+      ]
+    },
+    {
+      name: 'Orange Terrace',
+      description: 'Luxurious terrace room with stunning views and premium space for gatherings.',
+      price: 4200,
+      images: [
+        '/images/accommodation/orange_terrace/orange_terrace_1.jpeg',
+        '/images/accommodation/orange_terrace/orange_terrace_2.jpeg',
+        '/images/accommodation/orange_terrace/orange_terrace_3.jpeg',
+        '/images/accommodation/orange_terrace/orange_terrace_4.jpeg',
+        '/images/accommodation/orange_terrace/orange_terrace_5.jpeg',
+      ]
+    }
+  ];
+
   return (
     <>
       <Navigation />
+
+      <Lightbox
+        isOpen={lightboxOpen}
+        images={currentGallery.images}
+        currentIndex={photoIndex}
+        onClose={() => setLightboxOpen(false)}
+        onPrev={() => setPhotoIndex((prev) => (prev > 0 ? prev - 1 : currentGallery.images.length - 1))}
+        onNext={() => setPhotoIndex((prev) => (prev < currentGallery.images.length - 1 ? prev + 1 : 0))}
+        title={currentGallery.name}
+      />
 
       <Notification
         isVisible={notification.show}
@@ -478,65 +540,55 @@ export default function Home() {
           />
 
           <div className="grid md:grid-cols-3 gap-8">
-            {/* Room Type 1 */}
-            <div className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl border border-gray-100 hover:border-primary/30 transition-all duration-300 dark:bg-accent-dark dark:border-slate-700 dark:hover:border-primary/50">
-              <div className="h-48 bg-gradient-to-br from-primary to-primary-600 flex items-center justify-center">
-                <span className="text-5xl">🛏️</span>
+            {featuredRooms.map((room, idx) => (
+              <div key={idx} className="group bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl border border-gray-100 transition-all duration-300 dark:bg-accent-dark dark:border-slate-700">
+                <div
+                  className="relative h-56 w-full overflow-hidden cursor-pointer"
+                  onClick={() => openGallery(room.name, room.images, 0)}
+                >
+                  <Image
+                    src={room.images[0]}
+                    alt={room.name}
+                    fill
+                    className="object-cover transition-transform duration-500 group-hover:scale-110"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    priority={idx < 3}
+                    quality={75}
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                    <div className="bg-white/90 text-primary px-4 py-2 rounded-lg font-bold flex items-center space-x-2">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span>View Gallery</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-6 flex flex-col">
+                  <h3 className="text-2xl font-bold text-accent mb-1 dark:text-white">{room.name}</h3>
+                  <p className="text-sm text-gray-600 mb-4 dark:text-white/80 line-clamp-2 h-10">
+                    {room.description}
+                  </p>
+                  <div className="flex items-center justify-between mt-auto">
+                    <p className="text-2xl font-bold text-primary">
+                      ₱{room.price}
+                      <span className="text-sm text-gray-500 ml-1">/ night</span>
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 mt-4">
+                    <button
+                      onClick={() => openGallery(room.name, room.images, 0)}
+                      className="btn-outline py-2 text-xs text-center"
+                    >
+                      Gallery
+                    </button>
+                    <Link href="/rooms" className="btn-primary py-2 text-xs text-center">
+                      Details
+                    </Link>
+                  </div>
+                </div>
               </div>
-              <div className="p-6 flex flex-col h-full">
-                <h3 className="text-2xl font-bold text-accent mb-1 dark:text-white">Standard Rooms</h3>
-                <p className="text-sm text-gray-600 mb-4 dark:text-white">
-                  Comfortable and cozy spaces, ideal for couples and small families.
-                </p>
-                <p className="text-2xl font-bold text-primary mb-4">
-                  ₱1,500
-                  <span className="text-sm text-gray-500 ml-1">/ night</span>
-                </p>
-                <Link href="/rooms" className="btn-outline w-full mt-auto block text-center">
-                  View Details
-                </Link>
-              </div>
-            </div>
-
-            {/* Room Type 2 */}
-            <div className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl border border-gray-100 hover:border-secondary/30 transition-all duration-300 dark:bg-accent-dark dark:border-slate-700 dark:hover:border-secondary/50">
-              <div className="h-48 bg-gradient-to-br from-secondary to-secondary-600 flex items-center justify-center">
-                <span className="text-5xl">🏡</span>
-              </div>
-              <div className="p-6 flex flex-col h-full">
-                <h3 className="text-2xl font-bold text-accent mb-1 dark:text-white">Deluxe Suites</h3>
-                <p className="text-sm text-gray-600 mb-4 dark:text-white">
-                  Spacious suites with great views and premium amenities.
-                </p>
-                <p className="text-2xl font-bold text-primary mb-4">
-                  ₱4,000
-                  <span className="text-sm text-gray-500 ml-1">/ night</span>
-                </p>
-                <Link href="/rooms" className="btn-outline w-full mt-auto block text-center">
-                  View Details
-                </Link>
-              </div>
-            </div>
-
-            {/* Room Type 3 */}
-            <div className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl border border-gray-100 hover:border-primary/30 transition-all duration-300 dark:bg-accent-dark dark:border-slate-700 dark:hover:border-primary/50">
-              <div className="h-48 bg-gradient-to-br from-accent to-accent-light flex items-center justify-center">
-                <span className="text-5xl">🏰</span>
-              </div>
-              <div className="p-6 flex flex-col h-full">
-                <h3 className="text-2xl font-bold text-accent mb-1 dark:text-white">Private Villas</h3>
-                <p className="text-sm text-gray-600 mb-4 dark:text-white">
-                  Exclusive villas with generous space and full privacy.
-                </p>
-                <p className="text-2xl font-bold text-primary mb-4">
-                  ₱6,500
-                  <span className="text-sm text-gray-500 ml-1">/ night</span>
-                </p>
-                <Link href="/rooms" className="btn-outline w-full mt-auto block text-center">
-                  View Details
-                </Link>
-              </div>
-            </div>
+            ))}
           </div>
 
           <div className="text-center mt-12">

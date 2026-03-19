@@ -1,27 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import { handleUnexpectedError } from '@/lib/apiErrors';
+import { handleUnexpectedError, ErrorResponses } from '@/lib/apiErrors';
+import { authenticateRequest } from '@/lib/authMiddleware';
+import { logAuditWithRequest, AuditActions, EntityTypes } from '@/lib/audit';
 
 /**
- * GET /api/bookings/[id]
- * Public route to fetch a single booking by ID.
- * Used by the booking success/confirmation page.
- * No authentication required — the booking ID acts as a reference number.
+ * GET /api/bookings/[id]?hash=<qr_code_hash>
+ * Fetch a single booking by ID.
+ * 
+ * ACCESS CONTROL (one of the following must be true):
+ * 1. A valid `hash` query param matching the booking's qr_code_hash (used by success page)
+ * 2. A valid JWT token where the authenticated user owns the booking
+ * 
+ * This prevents IDOR — sequential ID enumeration cannot leak PII.
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const bookingId = parseInt(params.id);
+    const { id } = await params;
+    const bookingId = parseInt(id);
 
     if (isNaN(bookingId) || bookingId < 1) {
-      return NextResponse.json({ error: 'Invalid booking ID' }, { status: 400 });
+      return ErrorResponses.validationError('Invalid booking ID');
     }
 
     const result = await pool.query(
       `SELECT 
         b.id,
+        b.user_id,
         b.booking_date,
         b.check_out_date,
         b.booking_type,
@@ -58,10 +66,33 @@ export async function GET(
     );
 
     if (result.rows.length === 0) {
-      return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+      return ErrorResponses.notFound('Booking not found');
     }
 
     const booking = result.rows[0];
+
+    // --- ACCESS CONTROL ---
+    const hashParam = request.nextUrl.searchParams.get('hash');
+    let authorized = false;
+
+    // Method 1: Hash-based access (success page flow)
+    if (hashParam && booking.qr_code_hash && hashParam === booking.qr_code_hash) {
+      authorized = true;
+    }
+
+    // Method 2: JWT ownership check
+    if (!authorized) {
+      const authResult = await authenticateRequest(request);
+      if (authResult.authenticated && authResult.user) {
+        if (booking.user_id === authResult.user.id) {
+          authorized = true;
+        }
+      }
+    }
+
+    if (!authorized) {
+      return ErrorResponses.forbidden('Access denied. Provide a valid hash or authenticate as the booking owner.');
+    }
 
     return NextResponse.json({
       id: booking.id,
@@ -92,3 +123,4 @@ export async function GET(
     return handleUnexpectedError(error);
   }
 }
+

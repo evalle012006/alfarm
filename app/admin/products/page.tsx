@@ -1,47 +1,98 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Pagination from '@/components/admin/Pagination';
 import ProductModal from '@/components/admin/ProductModal';
-import { mockProducts, type MockProduct } from '@/lib/mockData/adminMockData';
+import { adminFetch } from '@/lib/adminFetch';
+import { toast } from 'sonner';
+
+interface Product {
+    id: number;
+    name: string;
+    category_id: number;
+    category_name: string;
+    description: string;
+    capacity: number;
+    price: number;
+    pricing_unit: string;
+    time_slot: string;
+    inventory_count: number;
+    is_active: boolean;
+    image_url: string | null;
+}
+
+interface Category {
+    id: number;
+    name: string;
+}
 
 export default function AdminProductsPage() {
-    const [products, setProducts] = useState<MockProduct[]>([]);
+    const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        // Simulate loading - replace with real API when available
-        const timer = setTimeout(() => {
-            setProducts(mockProducts);
-            setLoading(false);
-        }, 500);
-        return () => clearTimeout(timer);
-    }, []);
     const [currentPage, setCurrentPage] = useState(1);
+    const [totalCount, setTotalCount] = useState(0);
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [categories, setCategories] = useState<Category[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedProduct, setSelectedProduct] = useState<MockProduct | null>(null);
+    const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
     const itemsPerPage = 10;
 
-    // Filter products
-    const filteredProducts = products.filter((product) => {
-        const matchesCategory = categoryFilter === 'all' || product.category_name === categoryFilter;
-        const matchesSearch =
-            product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            product.description.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesCategory && matchesSearch;
-    });
+    // Debounce search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+            setCurrentPage(1);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
 
-    // Paginate
-    const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-    const paginatedProducts = filteredProducts.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
+    // Fetch categories for filter dropdown
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const res = await adminFetch('/api/admin/categories');
+                if (res.ok) {
+                    const data = await res.json();
+                    setCategories(data.categories || []);
+                }
+            } catch { /* silent */ }
+        };
+        fetchCategories();
+    }, []);
 
-    const handleEdit = (product: MockProduct) => {
+    // Fetch products from real API
+    const fetchProducts = useCallback(async () => {
+        setLoading(true);
+        try {
+            const params = new URLSearchParams();
+            if (debouncedSearch) params.set('search', debouncedSearch);
+            if (categoryFilter !== 'all') params.set('category', categoryFilter);
+            params.set('page', String(currentPage));
+            params.set('per_page', String(itemsPerPage));
+
+            const res = await adminFetch(`/api/admin/products?${params.toString()}`);
+            if (!res.ok) throw new Error('Failed to fetch products');
+            const data = await res.json();
+
+            setProducts(data.products || []);
+            setTotalCount(data.pagination?.total || 0);
+        } catch (error) {
+            toast.error('Failed to load products');
+        } finally {
+            setLoading(false);
+        }
+    }, [debouncedSearch, categoryFilter, currentPage]);
+
+    useEffect(() => {
+        fetchProducts();
+    }, [fetchProducts]);
+
+    const totalPages = Math.ceil(totalCount / itemsPerPage);
+
+    const handleEdit = (product: Product) => {
         setSelectedProduct(product);
         setIsModalOpen(true);
     };
@@ -51,10 +102,19 @@ export default function AdminProductsPage() {
         setIsModalOpen(true);
     };
 
-    const handleDelete = (productId: number) => {
-        // UI only - show confirmation
-        if (confirm('Are you sure you want to delete this product?')) {
-            console.log('Delete product:', productId);
+    const handleDelete = async (productId: number) => {
+        if (!confirm('Are you sure you want to deactivate this product?')) return;
+        try {
+            const res = await adminFetch(`/api/admin/products/${productId}`, { method: 'DELETE' });
+            if (!res.ok) {
+                const data = await res.json();
+                toast.error(data.error?.message || 'Failed to deactivate product');
+                return;
+            }
+            toast.success('Product deactivated');
+            fetchProducts();
+        } catch {
+            toast.error('Failed to deactivate product');
         }
     };
 
@@ -126,10 +186,9 @@ export default function AdminProductsPage() {
                             className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
                         >
                             <option value="all">All Categories</option>
-                            <option value="Entrance Fee">Entrance Fee</option>
-                            <option value="Accommodation">Accommodation</option>
-                            <option value="Amenities">Amenities</option>
-                            <option value="Rentals">Rentals</option>
+                            {categories.map((cat) => (
+                                <option key={cat.id} value={cat.name}>{cat.name}</option>
+                            ))}
                         </select>
                     </div>
                 </div>
@@ -142,7 +201,7 @@ export default function AdminProductsPage() {
                         <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
                         <p className="mt-4 text-gray-600 dark:text-gray-300">Loading products...</p>
                     </div>
-                ) : paginatedProducts.length === 0 ? (
+                ) : products.length === 0 ? (
                     <div className="p-8 text-center text-gray-600 dark:text-gray-300">
                         No products found.
                     </div>
@@ -175,7 +234,7 @@ export default function AdminProductsPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
-                            {paginatedProducts.map((product) => (
+                            {products.map((product) => (
                                 <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
                                     <td className="px-6 py-4">
                                         <div>
@@ -253,7 +312,7 @@ export default function AdminProductsPage() {
                 )}
 
                 {/* Pagination */}
-                {!loading && paginatedProducts.length > 0 && (
+                {!loading && products.length > 0 && (
                     <Pagination
                         currentPage={currentPage}
                         totalPages={totalPages}

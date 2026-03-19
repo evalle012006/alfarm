@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
@@ -18,7 +18,12 @@ interface ProductOption {
   type: string;
   category: string;
   time_slot: string;
+  pricing_unit: string;
+  imageUrl?: string;
 }
+
+import Lightbox from '@/components/ui/Lightbox';
+import Image from 'next/image';
 
 interface AvailabilityItem {
   id: number;
@@ -29,7 +34,7 @@ interface AvailabilityItem {
 function BookingResultsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { state: bookingState, setSearch, incrementCart, setCartQuantity } = useBooking();
+  const { state: bookingState, setSearch, incrementCart, setCartQuantity, clearCart } = useBooking();
 
   const searchType = (searchParams.get('type') || bookingState.bookingType || 'day') as 'day' | 'overnight';
   const checkInDate = searchParams.get('check_in') || searchParams.get('date') || bookingState.checkInDate || '';
@@ -57,6 +62,28 @@ function BookingResultsContent() {
     message: string;
     type: NotificationType;
   }>({ show: false, message: '', type: 'error' });
+
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [currentGallery, setCurrentGallery] = useState<{ name: string, images: string[] }>({ name: '', images: [] });
+  const [photoIndex, setPhotoIndex] = useState(0);
+
+  const openGallery = (name: string, firstImage: string) => {
+    // We only have the primary image from the DB, but we can infer the folder
+    // For a better experience, we could fetch all images or just show the one
+    // For now, let's show the primary image in the lightbox
+    setCurrentGallery({ name, images: [firstImage] });
+    setPhotoIndex(0);
+    setLightboxOpen(true);
+  };
+
+  // Clear cart when booking type changes (items from other time slots become invisible)
+  const prevSearchType = useRef(searchType);
+  useEffect(() => {
+    if (prevSearchType.current !== searchType) {
+      clearCart();
+      prevSearchType.current = searchType;
+    }
+  }, [searchType, clearCart]);
 
   // Guard: redirect if no date selected
   useEffect(() => {
@@ -102,7 +129,7 @@ function BookingResultsContent() {
     fetch('/api/products/entrance-fees')
       .then(res => res.ok ? res.json() : null)
       .then(data => { if (data) setEntranceFees(data); })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // Fetch availability — re-runs when dates or booking type change
@@ -201,8 +228,8 @@ function BookingResultsContent() {
     const product = products.find(p => p.id === parseInt(id));
     if (!product) return sum;
 
-    // Check if this is a per_night item (rooms) for overnight bookings
-    const isPerNight = product.type === 'room' && searchType === 'overnight';
+    // Check if this is a per_night item for overnight bookings
+    const isPerNight = product.pricing_unit === 'per_night' && searchType === 'overnight';
     const multiplier = isPerNight ? numNights : 1;
 
     return sum + (product.pricePerNight * qty * multiplier);
@@ -211,11 +238,13 @@ function BookingResultsContent() {
   const totalCost = productCost + totalEntranceFees;
 
   const handleProceed = () => {
-    // Validation: Require at least one accommodation for overnight stays
-    if (searchType === 'overnight' && totalItems === 0) {
+    // Validation: Require at least one item for all booking types
+    if (totalItems === 0) {
       setNotification({
         show: true,
-        message: 'For overnight stays, please select at least one room or accommodation.',
+        message: searchType === 'overnight'
+          ? 'For overnight stays, please select at least one room or accommodation.'
+          : 'Please select at least one item before proceeding.',
         type: 'warning'
       });
       return;
@@ -384,6 +413,29 @@ function BookingResultsContent() {
                       : 'border-gray-200 hover:-translate-y-2 hover:shadow-2xl'
                       }`}
                   >
+                    {/* Product Image */}
+                    {product.imageUrl && (
+                      <div
+                        className="relative h-48 w-full overflow-hidden rounded-t-3xl cursor-pointer group/img"
+                        onClick={() => openGallery(product.title, product.imageUrl!)}
+                      >
+                        <Image
+                          src={product.imageUrl}
+                          alt={product.title}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover/img:scale-110"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          priority
+                          quality={70}
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/20 transition-all flex items-center justify-center opacity-0 group-hover/img:opacity-100">
+                          <div className="bg-white/90 text-primary px-3 py-1.5 rounded-lg text-xs font-bold">
+                            View Photo
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex-1 p-6">
                       <div className="mb-4 flex items-start justify-between gap-2">
                         <span className="inline-flex items-center rounded-full bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary dark:border-primary/30 dark:from-primary/20 dark:to-secondary/20">
@@ -416,7 +468,7 @@ function BookingResultsContent() {
                             / {product.type === 'day-use' ? 'day' : 'night'}
                           </span>
                         </p>
-                        {product.type === 'room' && searchType === 'overnight' && numNights > 1 && (
+                        {product.pricing_unit === 'per_night' && searchType === 'overnight' && numNights > 1 && (
                           <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                             ₱{(product.pricePerNight * numNights).toLocaleString()} for {numNights} nights
                           </p>
@@ -513,6 +565,16 @@ function BookingResultsContent() {
       )}
 
       <Footer />
+
+      <Lightbox
+        isOpen={lightboxOpen}
+        images={currentGallery.images}
+        currentIndex={photoIndex}
+        onClose={() => setLightboxOpen(false)}
+        onPrev={() => setPhotoIndex((prev) => (prev > 0 ? prev - 1 : currentGallery.images.length - 1))}
+        onNext={() => setPhotoIndex((prev) => (prev < currentGallery.images.length - 1 ? prev + 1 : 0))}
+        title={currentGallery.name}
+      />
     </>
   );
 }

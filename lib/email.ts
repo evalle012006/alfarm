@@ -260,3 +260,66 @@ export async function sendBookingStatusUpdateEmail(
     return false;
   }
 }
+
+interface CancellationEmailParams {
+  to: string;
+  guestName: string;
+  bookingId: number;
+  bookingDate: string;
+  reason?: string;
+}
+
+export async function sendBookingCancellationEmail(params: CancellationEmailParams): Promise<boolean> {
+  const { to, guestName, bookingId, bookingDate, reason } = params;
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: linear-gradient(135deg, #2d5a27 0%, #4a7c43 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0;">AlFarm Resort</h1>
+      </div>
+      
+      <div style="background: #fff; padding: 30px; border: 1px solid #eee;">
+        <h2 style="color: #c0392b;">Booking Cancelled</h2>
+        <p>Dear ${guestName},</p>
+        <p>Your booking has been cancelled as requested.</p>
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Booking ID</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">#${bookingId}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Booking Date</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">${bookingDate}</td>
+          </tr>
+          ${reason ? `<tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Reason</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">${reason}</td>
+          </tr>` : ''}
+        </table>
+        <p>If you did not request this cancellation or have any questions, please contact us immediately.</p>
+      </div>
+      
+      <div style="background: #333; color: #fff; padding: 15px; text-align: center; border-radius: 0 0 10px 10px;">
+        <p style="margin: 0; font-size: 12px;">© ${new Date().getFullYear()} AlFarm Resort & Adventure Park</p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: `"AlFarm Resort" <${process.env.SMTP_FROM || 'noreply@alfarm.com'}>`,
+      to,
+      subject: `Booking Cancelled - AlFarm Resort #${bookingId}`,
+      html,
+    });
+
+    console.log(`Cancellation email sent to ${to}`);
+    return true;
+  } catch (error) {
+    console.error('Failed to send cancellation email:', error);
+    return false;
+  }
+}

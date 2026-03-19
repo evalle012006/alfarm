@@ -5,111 +5,19 @@ export default function Activities() {
   const activities = [
     {
       id: 1,
-      name: 'Zip-Lining',
-      icon: '🪂',
-      description: 'Soar through the treetops on our world-class zip-line courses, ranging from beginner-friendly to extreme adventures.',
-      duration: '2-3 hours',
-      difficulty: 'All levels',
-      highlights: ['6 different zip-line routes', 'Heights up to 200 feet', 'Professional safety equipment', 'Trained guides'],
+      name: 'Horse Back Riding',
+      icon: '🏇',
+      description: 'Experience the beauty of our resort on horseback, with guided tours through scenic trails and open meadows.',
+      duration: '5 minutes',
+      highlights: ['₱50 per 5 minutes', 'Well-trained horses', 'Scenic mountain trails', 'Safety gear provided'],
     },
     {
       id: 2,
-      name: 'Nature Hiking',
-      icon: '🥾',
-      description: 'Explore our extensive trail network through diverse ecosystems, from gentle nature walks to challenging mountain treks.',
-      duration: '1-4 hours',
-      difficulty: 'Easy to Hard',
-      highlights: ['15+ marked trails', 'Wildlife viewing opportunities', 'Scenic viewpoints', 'Guided tours available'],
-    },
-    {
-      id: 3,
-      name: 'Rock Climbing',
-      icon: '🧗',
-      description: 'Challenge yourself on our natural rock faces and indoor climbing walls suitable for all skill levels.',
+      name: 'Cave Tour',
+      icon: '🔦',
+      description: 'Discover the hidden wonders of our ancient limestone caves with guided exploration tours.',
       duration: '2-3 hours',
-      difficulty: 'Beginner to Advanced',
-      highlights: ['Indoor and outdoor walls', 'Routes for all levels', 'Equipment provided', 'Instruction included'],
-    },
-    {
-      id: 4,
-      name: 'Wildlife Safari',
-      icon: '🦌',
-      description: 'Join our expert naturalists for guided wildlife viewing tours through our protected conservation areas.',
-      duration: '2-3 hours',
-      difficulty: 'Easy',
-      highlights: ['Deer, birds, and native wildlife', 'Photography opportunities', 'Educational commentary', 'Early morning & sunset tours'],
-    },
-    {
-      id: 5,
-      name: 'Obstacle Course',
-      icon: '🏃',
-      description: 'Test your agility and strength on our exciting obstacle courses designed for fun and fitness.',
-      duration: '1-2 hours',
-      difficulty: 'Moderate',
-      highlights: ['Team building activities', 'Various difficulty levels', 'Rope courses', 'Balance challenges'],
-    },
-    {
-      id: 6,
-      name: 'Farm Tours',
-      icon: '🚜',
-      description: 'Experience authentic farm life, learn about sustainable agriculture, and interact with farm animals.',
-      duration: '1.5 hours',
-      difficulty: 'Easy',
-      highlights: ['Organic farm practices', 'Animal feeding', 'Harvest activities', 'Farm-fresh produce tasting'],
-    },
-    {
-      id: 7,
-      name: 'Mountain Biking',
-      icon: '🚴',
-      description: 'Ride through scenic trails with varying terrain perfect for mountain biking enthusiasts.',
-      duration: '2-4 hours',
-      difficulty: 'Moderate to Hard',
-      highlights: ['Bike rentals available', 'Multiple trail options', 'Forest and mountain routes', 'Guided tours'],
-    },
-    {
-      id: 8,
-      name: 'Bird Watching',
-      icon: '🦅',
-      description: 'Discover the diverse bird species that call our resort home with our expert ornithology guides.',
-      duration: '2-3 hours',
-      difficulty: 'Easy',
-      highlights: ['Over 100 bird species', 'Binoculars provided', 'Early morning tours', 'Photography guidance'],
-    },
-    {
-      id: 9,
-      name: 'Fishing',
-      icon: '🎣',
-      description: 'Enjoy peaceful fishing in our stocked ponds and natural streams.',
-      duration: 'Flexible',
-      difficulty: 'Easy',
-      highlights: ['Equipment rental', 'Catch and release', 'Guided fishing spots', 'Family-friendly'],
-    },
-    {
-      id: 10,
-      name: 'Archery',
-      icon: '🏹',
-      description: 'Learn the ancient art of archery with professional instruction and modern equipment.',
-      duration: '1-2 hours',
-      difficulty: 'All levels',
-      highlights: ['Professional instruction', 'Equipment provided', 'Target practice', 'Competitions available'],
-    },
-    {
-      id: 11,
-      name: 'Yoga & Meditation',
-      icon: '🧘',
-      description: 'Find your zen with outdoor yoga sessions and guided meditation in natural settings.',
-      duration: '1 hour',
-      difficulty: 'All levels',
-      highlights: ['Morning and sunset sessions', 'All experience levels', 'Peaceful forest settings', 'Professional instructors'],
-    },
-    {
-      id: 12,
-      name: 'Campfire Nights',
-      icon: '🔥',
-      description: 'Gather around the campfire for stories, music, and s\'mores under the stars.',
-      duration: '2-3 hours',
-      difficulty: 'Easy',
-      highlights: ['Evening entertainment', 'S\'mores making', 'Live music', 'Stargazing'],
+      highlights: ['₱50 per person', 'Minimum of 7 persons', 'Experienced cave guides', 'Headlamps provided'],
     },
   ];
 
@@ -141,20 +49,16 @@ export default function Activities() {
                   <div className="text-6xl mb-3">{activity.icon}</div>
                   <h3 className="text-2xl font-bold text-accent mb-2 dark:text-white">{activity.name}</h3>
                 </div>
-                
+
                 <p className="text-gray-700 mb-4 dark:text-white">{activity.description}</p>
-                
-                <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
-                  <div className="bg-primary/10 p-3 rounded-lg text-center dark:bg-accent-dark/60">
+
+                <div className="grid grid-cols-1 gap-4 mb-4 text-sm text-center">
+                  <div className="bg-primary/10 p-3 rounded-lg dark:bg-accent-dark/60">
                     <p className="text-gray-600 dark:text-white">Duration</p>
                     <p className="font-semibold text-accent dark:text-white">{activity.duration}</p>
                   </div>
-                  <div className="bg-secondary/10 p-3 rounded-lg text-center dark:bg-accent-dark/60">
-                    <p className="text-gray-600 dark:text-white">Difficulty</p>
-                    <p className="font-semibold text-accent dark:text-white">{activity.difficulty}</p>
-                  </div>
                 </div>
-                
+
                 <div>
                   <h4 className="font-semibold text-accent mb-2 dark:text-white">Highlights:</h4>
                   <ul className="space-y-1">
@@ -216,10 +120,10 @@ export default function Activities() {
             </div>
           </div>
         </div>
-      </section>
+      </section >
 
       {/* CTA Section */}
-      <section className="py-16 nature-gradient">
+      < section className="py-16 nature-gradient" >
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-4xl font-bold text-white mb-6">
             Ready for Adventure?
@@ -231,7 +135,7 @@ export default function Activities() {
             Book Your Adventure
           </a>
         </div>
-      </section>
+      </section >
 
       <Footer />
     </>

@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
     phone VARCHAR(20),
     role VARCHAR(20) DEFAULT 'guest' CHECK (role IN ('super_admin', 'cashier', 'guest', 'admin', 'root')),
     is_active BOOLEAN DEFAULT true,
+    is_shadow BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -53,8 +54,11 @@ CREATE TABLE IF NOT EXISTS bookings (
     booking_type VARCHAR(20) DEFAULT 'day' CHECK (booking_type IN ('day', 'overnight')),
     status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'checked_in', 'checked_out', 'completed', 'cancelled')),
     payment_status VARCHAR(20) DEFAULT 'unpaid' CHECK (payment_status IN ('unpaid', 'partial', 'paid', 'voided', 'refunded')),
-    payment_method VARCHAR(20) DEFAULT 'cash' CHECK (payment_method IN ('cash', 'gcash', 'paymaya')),
+    payment_method VARCHAR(20) DEFAULT 'paymongo' CHECK (payment_method IN ('paymongo')),
     total_amount DECIMAL(10, 2) NOT NULL,
+    paid_amount DECIMAL(10, 2) DEFAULT 0,
+    paymongo_checkout_session_id VARCHAR(255),
+    paymongo_payment_id VARCHAR(255),
     qr_code_hash VARCHAR(255), -- Unique identifier for the QR code
     special_requests TEXT,
     checked_in_at TIMESTAMP, -- When guest checked in
@@ -85,6 +89,8 @@ CREATE INDEX idx_bookings_date ON bookings(booking_date);
 CREATE INDEX idx_bookings_checkout ON bookings(check_out_date);
 CREATE INDEX idx_bookings_email ON bookings(guest_email);
 CREATE INDEX idx_bookings_type ON bookings(booking_type);
+CREATE INDEX idx_bookings_paymongo_session ON bookings(paymongo_checkout_session_id);
+CREATE INDEX idx_bookings_paymongo_payment ON bookings(paymongo_payment_id);
 
 -- Seed Data: Categories
 INSERT INTO categories (name, description) VALUES
@@ -135,6 +141,23 @@ INSERT INTO products (category_id, name, price, pricing_unit, time_slot, invento
 ((SELECT id FROM cats WHERE name='Amenities'), 'Cave Tour', 50.00, 'per_head', 'day', 100, 1)
 ON CONFLICT (name) DO NOTHING;
 
+-- Payment Transactions Ledger
+CREATE TABLE IF NOT EXISTS payment_transactions (
+    id BIGSERIAL PRIMARY KEY,
+    booking_id INT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+    type VARCHAR(20) NOT NULL CHECK (type IN ('charge', 'refund', 'void')),
+    amount DECIMAL(10, 2) NOT NULL,
+    payment_method VARCHAR(20) NOT NULL,
+    paymongo_payment_id VARCHAR(255),
+    paymongo_refund_id VARCHAR(255),
+    notes TEXT,
+    created_by INT REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_payment_tx_booking ON payment_transactions(booking_id);
+CREATE INDEX idx_payment_tx_paymongo_payment ON payment_transactions(paymongo_payment_id);
+
 -- Audit Logs Table (Phase 3)
 CREATE TABLE IF NOT EXISTS audit_logs (
     id BIGSERIAL PRIMARY KEY,
@@ -152,6 +175,27 @@ CREATE INDEX idx_audit_logs_actor ON audit_logs(actor_user_id);
 CREATE INDEX idx_audit_logs_action ON audit_logs(action);
 CREATE INDEX idx_audit_logs_entity ON audit_logs(entity_type, entity_id);
 CREATE INDEX idx_audit_logs_created ON audit_logs(created_at);
+
+-- Auto-update updated_at on row modification
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = CURRENT_TIMESTAMP;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_users_updated_at
+  BEFORE UPDATE ON users
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER trg_products_updated_at
+  BEFORE UPDATE ON products
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER trg_bookings_updated_at
+  BEFORE UPDATE ON bookings
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Insert Admin User (super_admin role)
 INSERT INTO users (email, password, first_name, last_name, role, is_active) 

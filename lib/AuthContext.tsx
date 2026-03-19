@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 
 export interface User {
   id: number;
@@ -143,6 +143,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(updatedUser);
     localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
   };
+
+  /**
+   * Validate token by calling /api/auth/me.
+   * If the token is expired or invalid (401), auto-logout.
+   */
+  const refreshUser = useCallback(async () => {
+    const storedToken = localStorage.getItem(TOKEN_KEY);
+    if (!storedToken) return;
+
+    try {
+      const response = await fetch('/api/auth/me', {
+        headers: { Authorization: `Bearer ${storedToken}` },
+      });
+
+      if (response.status === 401) {
+        // Token expired or invalid — auto-logout
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+        setToken(null);
+        setUser(null);
+        sessionStorage.setItem('session_expired', 'true');
+        return;
+      }
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.user) {
+          setUser(data.user);
+          localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+        }
+      }
+    } catch {
+      // Network error — don't logout, just skip
+    }
+  }, []);
+
+  // Validate token on window focus
+  useEffect(() => {
+    const handleFocus = () => {
+      refreshUser();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [refreshUser]);
 
   return (
     <AuthContext.Provider

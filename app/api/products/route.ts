@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
         p.description,
         p.pricing_unit,
         p.time_slot,
+        p.image_url,
         c.name as category_name
       FROM products p
       JOIN categories c ON p.category_id = c.id
@@ -40,29 +41,31 @@ export async function GET(request: NextRequest) {
 
     // Transform data to match frontend expectations
     const products = result.rows.map(row => {
-        // Derive simple type for UI badges
-        let type = 'room';
-        if (row.category_name.includes('Entrance')) type = 'day-use';
-        if (row.category_name.includes('Rentals')) type = 'add-on';
-        
-        // Format capacity string
-        const capacity = [];
-        if (row.pricing_unit === 'per_head') {
-            capacity.push('Per Person');
-        } else if (row.maxCapacity > 0) {
-            capacity.push(`Up to ${row.maxCapacity} Guests`);
-        }
+      // Derive simple type for UI badges
+      let type = 'room';
+      if (row.category_name.includes('Entrance')) type = 'day-use';
+      if (row.category_name.includes('Rentals')) type = 'add-on';
 
-        return {
-            id: row.id,
-            title: row.title,
-            pricePerNight: parseFloat(row.pricePerNight), // pg returns decimals as strings
-            capacity: capacity,
-            description: row.description || '',
-            type: type,
-            category: row.category_name,
-            time_slot: row.time_slot,
-        };
+      // Format capacity string
+      const capacity = [];
+      if (row.pricing_unit === 'per_head') {
+        capacity.push('Per Person');
+      } else if (row.maxCapacity > 0) {
+        capacity.push(`Up to ${row.maxCapacity} Guests`);
+      }
+
+      return {
+        id: row.id,
+        title: row.title,
+        pricePerNight: parseFloat(row.pricePerNight), // pg returns decimals as strings
+        capacity: capacity,
+        description: row.description || '',
+        type: type,
+        category: row.category_name,
+        time_slot: row.time_slot,
+        pricing_unit: row.pricing_unit,
+        imageUrl: row.image_url,
+      };
     });
 
     return NextResponse.json(products);

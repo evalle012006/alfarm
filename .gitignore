@@ -41,3 +41,8 @@ next-env.d.ts
 .docker/
 
 /temp_docs
+
+# Generated files
+file_list.txt
+room_files.txt
+tsc_output.txt

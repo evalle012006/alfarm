@@ -12,6 +12,7 @@ import CountSelector from '@/components/ui/CountSelector';
 import BookingStepper from '@/components/BookingStepper';
 import { useAuth } from '@/lib/AuthContext';
 import { getBookingCartItems, useBooking } from '@/lib/BookingContext';
+import TermsModal from '@/components/ui/TermsModal';
 
 interface GuestInfoForm {
   firstName: string;
@@ -67,6 +68,7 @@ export default function BookingInfoPage() {
   const [specialRequestsLocal, setSpecialRequestsLocal] = useState('');
 
   const [errors, setErrors] = useState<ValidationErrors>({});
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const [profileAvailable, setProfileAvailable] = useState(false);
 
   useEffect(() => {
@@ -376,7 +378,14 @@ export default function BookingInfoPage() {
 
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-6 border-t-2 border-gray-200 dark:border-slate-700">
                 <p className="text-xs text-gray-500 dark:text-gray-400 max-w-md">
-                  By continuing, you agree to our house rules and cancellation policy. You&apos;ll see a
+                  By continuing, you agree to our{' '}
+                  <button
+                    type="button"
+                    onClick={() => setShowTermsModal(true)}
+                    className="text-primary font-semibold underline underline-offset-2 hover:text-primary-600 transition-colors"
+                  >
+                    Terms & Conditions, house rules, and cancellation policy
+                  </button>. You&apos;ll see a
                   final summary of your stay before confirming the booking.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
@@ -399,6 +408,8 @@ export default function BookingInfoPage() {
           </div>
         </div>
       </section>
+
+      <TermsModal isOpen={showTermsModal} onClose={() => setShowTermsModal(false)} />
 
       <Footer />
     </>

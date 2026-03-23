@@ -3,6 +3,7 @@ import pool from '@/lib/db';
 import { requirePermission } from '@/lib/rbac';
 import { handleUnexpectedError, ErrorResponses } from '@/lib/apiErrors';
 import { logAuditWithRequest, AuditActions, EntityTypes, createSnapshot } from '@/lib/audit';
+import { sendBookingStatusUpdateEmail } from '@/lib/email';
 
 /**
  * POST /api/admin/bookings/[id]/checkin
@@ -28,7 +29,7 @@ export async function POST(
 
     // Get current booking state
     const existingResult = await pool.query(
-      `SELECT id, status, checked_in_at, guest_first_name, guest_last_name
+      `SELECT id, status, checked_in_at, guest_first_name, guest_last_name, guest_email
        FROM bookings WHERE id = $1`,
       [bookingId]
     );
@@ -81,6 +82,14 @@ export async function POST(
         guestName: `${booking.guest_first_name} ${booking.guest_last_name}`,
       },
     });
+
+    // Send check-in email (fire-and-forget)
+    sendBookingStatusUpdateEmail(
+      booking.guest_email,
+      `${booking.guest_first_name} ${booking.guest_last_name}`,
+      bookingId,
+      'checked_in'
+    ).catch((err) => console.error('Check-in email failed:', err));
 
     return NextResponse.json({
       message: 'Guest checked in successfully',

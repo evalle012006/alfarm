@@ -56,6 +56,11 @@ export const AuditActions = {
   STAFF_PASSWORD_RESET: 'staff.password_reset',
   STAFF_ROLE_CHANGE: 'staff.role_change',
 
+  // Product actions
+  PRODUCT_CREATE: 'product.create',
+  PRODUCT_UPDATE: 'product.update',
+  PRODUCT_DISABLE: 'product.disable',
+
   // Profile actions
   PROFILE_UPDATE: 'profile.update',
   PASSWORD_CHANGE: 'profile.password_change',
@@ -68,6 +73,7 @@ export const EntityTypes = {
   BOOKING: 'booking',
   USER: 'user',
   PAYMENT: 'payment',
+  PRODUCT: 'product',
 } as const;
 
 /**

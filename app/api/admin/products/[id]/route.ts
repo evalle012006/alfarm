@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { requirePermission } from '@/lib/rbac';
 import { handleUnexpectedError, ErrorResponses } from '@/lib/apiErrors';
+import { logAuditWithRequest, AuditActions, EntityTypes, createSnapshot } from '@/lib/audit';
 
 // GET - Get single product
 export async function GET(
@@ -54,10 +55,14 @@ export async function PATCH(
       return ErrorResponses.validationError('Invalid product ID');
     }
 
-    const existing = await pool.query('SELECT id FROM products WHERE id = $1', [productId]);
+    const existing = await pool.query(
+      'SELECT id, name, category_id, price, pricing_unit, inventory_count, is_active FROM products WHERE id = $1',
+      [productId]
+    );
     if (existing.rows.length === 0) {
       return ErrorResponses.notFound('Product not found');
     }
+    const beforeProduct = existing.rows[0];
 
     const body = await request.json();
     const allowedFields: Record<string, string> = {
@@ -106,9 +111,26 @@ export async function PATCH(
       values
     );
 
+    const updatedProduct = result.rows[0];
+
+    // Audit log
+    logAuditWithRequest(request, {
+      actorUserId: check.user.id,
+      actorEmail: check.user.email,
+      action: AuditActions.PRODUCT_UPDATE,
+      entityType: EntityTypes.PRODUCT,
+      entityId: productId,
+      metadata: {
+        ...createSnapshot(
+          { name: beforeProduct.name, price: parseFloat(beforeProduct.price), inventoryCount: beforeProduct.inventory_count, isActive: beforeProduct.is_active },
+          { name: updatedProduct.name, price: parseFloat(updatedProduct.price), inventoryCount: updatedProduct.inventory_count, isActive: updatedProduct.is_active }
+        ),
+      },
+    }).catch((err) => console.error('Audit log failed:', err));
+
     return NextResponse.json({
       message: 'Product updated successfully',
-      product: { ...result.rows[0], price: parseFloat(result.rows[0].price) },
+      product: { ...updatedProduct, price: parseFloat(updatedProduct.price) },
     });
   } catch (error) {
     return handleUnexpectedError(error);
@@ -152,6 +174,22 @@ export async function DELETE(
     if (result.rows.length === 0) {
       return ErrorResponses.notFound('Product not found');
     }
+
+    // Audit log
+    logAuditWithRequest(request, {
+      actorUserId: check.user.id,
+      actorEmail: check.user.email,
+      action: AuditActions.PRODUCT_DISABLE,
+      entityType: EntityTypes.PRODUCT,
+      entityId: productId,
+      metadata: {
+        ...createSnapshot(
+          { isActive: true },
+          { isActive: false }
+        ),
+        productName: result.rows[0].name,
+      },
+    }).catch((err) => console.error('Audit log failed:', err));
 
     return NextResponse.json({
       message: 'Product deactivated successfully',

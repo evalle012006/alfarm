@@ -10,7 +10,10 @@ import {
     ChevronRight,
     Clock,
     DollarSign,
-    History
+    History,
+    Edit,
+    Loader2,
+    Save
 } from 'lucide-react';
 import { format } from 'date-fns';
 import Pagination from '@/components/admin/Pagination';
@@ -44,6 +47,9 @@ export default function GuestManagementPage() {
     const [totalCount, setTotalCount] = useState(0);
     const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isSavingEdit, setIsSavingEdit] = useState(false);
+    const [editFormData, setEditFormData] = useState({ firstName: '', lastName: '', email: '', phone: '' });
 
     const limit = 20;
 
@@ -87,6 +93,52 @@ export default function GuestManagementPage() {
     const handleViewDetails = (guest: Guest) => {
         setSelectedGuest(guest);
         setIsDetailModalOpen(true);
+    };
+
+    const handleOpenEdit = (guest: Guest) => {
+        setEditFormData({
+            firstName: guest.firstName || '',
+            lastName: guest.lastName || '',
+            email: guest.email || '',
+            phone: guest.phone || '',
+        });
+        setSelectedGuest(guest);
+        setIsDetailModalOpen(false);
+        setIsEditModalOpen(true);
+    };
+
+    const handleSaveEdit = async () => {
+        if (!selectedGuest) return;
+        setIsSavingEdit(true);
+        try {
+            const changes: Record<string, string> = {};
+            if (editFormData.firstName !== selectedGuest.firstName) changes.firstName = editFormData.firstName;
+            if (editFormData.lastName !== selectedGuest.lastName) changes.lastName = editFormData.lastName;
+            if (editFormData.email !== selectedGuest.email) changes.email = editFormData.email;
+            if (editFormData.phone !== (selectedGuest.phone || '')) changes.phone = editFormData.phone;
+
+            if (Object.keys(changes).length === 0) {
+                setIsEditModalOpen(false);
+                return;
+            }
+
+            const res = await adminFetch(`/api/admin/guests/${selectedGuest.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(changes),
+            });
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || 'Failed to update guest');
+            }
+            toast.success('Guest updated successfully');
+            setIsEditModalOpen(false);
+            fetchGuests();
+        } catch (error: any) {
+            toast.error(error.message);
+        } finally {
+            setIsSavingEdit(false);
+        }
     };
 
     return (
@@ -305,13 +357,6 @@ export default function GuestManagementPage() {
                             </div>
                         </div>
 
-                        {/* History Note */}
-                        <div className="p-6 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-900/20 text-center">
-                            <p className="text-sm text-blue-700 dark:text-blue-400">
-                                Full booking history and detailed analytics coming soon.
-                            </p>
-                        </div>
-
                         <div className="flex gap-4 pt-4 border-t border-gray-100 dark:border-slate-800">
                             <button
                                 onClick={() => setIsDetailModalOpen(false)}
@@ -320,17 +365,80 @@ export default function GuestManagementPage() {
                                 Close
                             </button>
                             <button
-                                onClick={() => {
-                                    setIsDetailModalOpen(false);
-                                    toast.info("Navigating to full audit log...");
-                                }}
-                                className="flex-1 px-6 py-3 bg-primary text-white font-bold rounded-xl hover:shadow-lg hover:shadow-primary/20 transition-all"
+                                onClick={() => handleOpenEdit(selectedGuest)}
+                                className="flex-1 px-6 py-3 bg-primary text-white font-bold rounded-xl hover:shadow-lg hover:shadow-primary/20 transition-all flex items-center justify-center gap-2"
                             >
-                                View All Activity
+                                <Edit className="w-4 h-4" />
+                                Edit Guest
                             </button>
                         </div>
                     </div>
                 )}
+            </Modal>
+
+            {/* Edit Guest Modal */}
+            <Modal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                title="Edit Guest"
+                size="md"
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">First Name</label>
+                            <input
+                                type="text"
+                                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium text-sm outline-none text-accent dark:text-white"
+                                value={editFormData.firstName}
+                                onChange={(e) => setEditFormData({ ...editFormData, firstName: e.target.value })}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Last Name</label>
+                            <input
+                                type="text"
+                                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium text-sm outline-none text-accent dark:text-white"
+                                value={editFormData.lastName}
+                                onChange={(e) => setEditFormData({ ...editFormData, lastName: e.target.value })}
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Email</label>
+                        <input
+                            type="email"
+                            className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium text-sm outline-none text-accent dark:text-white"
+                            value={editFormData.email}
+                            onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Phone</label>
+                        <input
+                            type="tel"
+                            className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium text-sm outline-none text-accent dark:text-white"
+                            value={editFormData.phone}
+                            onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                        />
+                    </div>
+                    <div className="flex gap-3 pt-4 border-t border-gray-100 dark:border-slate-800">
+                        <button
+                            onClick={() => setIsEditModalOpen(false)}
+                            className="flex-1 px-6 py-3 rounded-xl font-bold bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700 transition-all"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleSaveEdit}
+                            disabled={isSavingEdit}
+                            className="flex-1 px-6 py-3 rounded-xl font-bold bg-primary text-white hover:shadow-lg hover:shadow-primary/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                            {isSavingEdit ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
             </Modal>
         </div>
     );

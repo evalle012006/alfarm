@@ -8,6 +8,7 @@ import { sanitizeSearch } from '@/lib/sanitize';
 import { parsePagination, buildPaginationResponse } from '@/lib/pagination';
 import { logAuditWithRequest, AuditActions, EntityTypes } from '@/lib/audit';
 import { AdminBookingPayloadSchema, type AdminBookingPayload } from '@/lib/validation/bookingSchemas';
+import { sendBookingConfirmationEmail } from '@/lib/email';
 
 // GET - List all bookings (admin only)
 export async function GET(request: NextRequest) {
@@ -375,6 +376,25 @@ export async function POST(request: NextRequest) {
         status: initialStatus || 'confirmed',
       },
     }).catch((err) => console.error('Audit log failed:', err));
+
+    // ============================================
+    // STEP 9: SEND CONFIRMATION EMAIL (fire-and-forget)
+    // ============================================
+    sendBookingConfirmationEmail({
+      booking_id: bookingId,
+      guest_name: `${guest_info.first_name} ${guest_info.last_name}`,
+      guest_email: guest_info.email,
+      booking_date,
+      check_out_date: check_out_date || null,
+      booking_type: type,
+      total_amount: totalAmount,
+      items: items.map((item: any) => ({
+        name: item.product_name || `Product #${item.product_id}`,
+        quantity: item.quantity,
+        subtotal: 0, // Will be approximate; exact values already committed
+      })),
+      status: initialStatus || 'confirmed',
+    }).catch((err) => console.error('Booking confirmation email failed:', err));
 
     return NextResponse.json({
       booking_id: bookingId,

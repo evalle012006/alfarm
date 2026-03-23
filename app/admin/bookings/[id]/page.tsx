@@ -25,6 +25,7 @@ import PaymentCard from '@/components/admin/PaymentCard';
 import StaffNotes from '@/components/admin/StaffNotes';
 import AuditTrail from '@/components/admin/AuditTrail';
 import BookingEditModal from '@/components/admin/BookingEditModal';
+import BookingItemsEditor from '@/components/admin/BookingItemsEditor';
 
 export default function BookingDetailPage() {
     const { id } = useParams();
@@ -184,53 +185,22 @@ export default function BookingDetailPage() {
                 </div>
             </div>
 
-            {/* Section 3 — Booked Items Table */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-gray-100 dark:border-slate-800">
-                    <h3 className="font-bold text-accent dark:text-white">Booked Items</h3>
-                </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead className="bg-gray-50 dark:bg-slate-800 border-b border-gray-100 dark:border-slate-800">
-                            <tr>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase">Product Name</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase">Category</th>
-                                <th className="px-6 py-4 text-center text-xs font-bold text-gray-400 uppercase">Qty</th>
-                                <th className="px-6 py-4 text-right text-xs font-bold text-gray-400 uppercase">Unit Price</th>
-                                <th className="px-6 py-4 text-right text-xs font-bold text-gray-400 uppercase">Subtotal</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
-                            {booking.items?.map((item: any, idx: number) => (
-                                <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                                    <td className="px-6 py-4 text-sm font-bold text-accent dark:text-white">{item.product_name}</td>
-                                    <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 uppercase">{item.category}</td>
-                                    <td className="px-6 py-4 text-sm text-center font-medium">{item.quantity}</td>
-                                    <td className="px-6 py-4 text-sm text-right">₱{item.unit_price.toLocaleString()}</td>
-                                    <td className="px-6 py-4 text-sm text-right font-bold text-accent dark:text-white">
-                                        ₱{item.subtotal.toLocaleString()}
-                                    </td>
-                                </tr>
-                            ))}
-                            {/* Headcount as extra items */}
-                            <tr className="bg-gray-50/30 dark:bg-slate-800/20">
-                                <td className="px-6 py-3 text-sm text-gray-600 dark:text-gray-300 italic" colSpan={2}>Guest Entrance Count</td>
-                                <td className="px-6 py-3 text-sm text-center font-medium">{booking.adults + booking.children}</td>
-                                <td className="px-6 py-3 text-right" colSpan={2}>
-                                    <span className="text-xs text-gray-400 uppercase mr-2 font-bold">Total Items</span>
-                                    <span className="text-sm font-bold">₱{booking.total_amount.toLocaleString()}</span>
-                                </td>
-                            </tr>
-                        </tbody>
-                        <tfoot className="bg-slate-800 dark:bg-black text-white">
-                            <tr>
-                                <td colSpan={4} className="px-6 py-4 text-right font-bold uppercase tracking-wider text-sm">Grand Total</td>
-                                <td className="px-6 py-4 text-right text-xl font-bold text-primary">₱{booking.total_amount.toLocaleString()}</td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-            </div>
+            {/* Section 3 — Booked Items (Editable) */}
+            <BookingItemsEditor
+                bookingId={booking.id}
+                items={(booking.items || []).map((item: any) => ({
+                    id: item.id,
+                    product_id: item.product_id,
+                    product_name: item.product_name,
+                    category: item.category,
+                    quantity: item.quantity,
+                    unit_price: item.unit_price,
+                    subtotal: item.subtotal,
+                }))}
+                bookingStatus={booking.status}
+                totalAmount={booking.total_amount}
+                onRefresh={fetchBooking}
+            />
 
             {/* Section 4 — Payment Card */}
             <PaymentCard

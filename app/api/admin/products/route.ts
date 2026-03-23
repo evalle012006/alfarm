@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { requirePermission } from '@/lib/rbac';
 import { handleUnexpectedError } from '@/lib/apiErrors';
+import { logAuditWithRequest, AuditActions, EntityTypes } from '@/lib/audit';
 import { sanitizeSearch } from '@/lib/sanitize';
 import { parsePagination, buildPaginationResponse } from '@/lib/pagination';
 
@@ -151,10 +152,30 @@ export async function POST(request: NextRequest) {
       ]
     );
 
+    const newProduct = result.rows[0];
+
+    // Audit log
+    logAuditWithRequest(request, {
+      actorUserId: check.user.id,
+      actorEmail: check.user.email,
+      action: AuditActions.PRODUCT_CREATE,
+      entityType: EntityTypes.PRODUCT,
+      entityId: newProduct.id,
+      metadata: {
+        after: {
+          name: newProduct.name,
+          categoryId: newProduct.category_id,
+          price: parseFloat(newProduct.price),
+          pricingUnit: newProduct.pricing_unit,
+          inventoryCount: newProduct.inventory_count,
+        },
+      },
+    }).catch((err) => console.error('Audit log failed:', err));
+
     return NextResponse.json(
       {
         message: 'Product created successfully',
-        product: { ...result.rows[0], price: parseFloat(result.rows[0].price) },
+        product: { ...newProduct, price: parseFloat(newProduct.price) },
       },
       { status: 201 }
     );

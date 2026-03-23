@@ -20,8 +20,28 @@ interface DashboardStats {
   totalBookings: number;
   pendingBookings: number;
   confirmedBookings: number;
+  checkedInBookings: number;
   totalProducts: number;
   totalRevenue: number;
+  todayRevenue: number;
+  todayArrivalsCount: number;
+  todayArrivals: Array<{
+    id: number;
+    guestName: string;
+    bookingType: string;
+    bookingTime: string;
+    status: string;
+    paymentStatus: string;
+    totalAmount: number;
+  }>;
+  recentActivity: Array<{
+    id: number;
+    action: string;
+    entityType: string;
+    entityId: number;
+    actorName: string;
+    createdAt: string;
+  }>;
 }
 
 /**
@@ -36,29 +56,36 @@ export default function AdminDashboard() {
     totalBookings: 0,
     pendingBookings: 0,
     confirmedBookings: 0,
+    checkedInBookings: 0,
     totalProducts: 0,
     totalRevenue: 0,
+    todayRevenue: 0,
+    todayArrivalsCount: 0,
+    todayArrivals: [],
+    recentActivity: [],
   });
 
-  // Fetch dashboard stats on mount
+  // Fetch dashboard stats from dedicated endpoint
   useEffect(() => {
     async function fetchStats() {
       try {
-        // Fetch bookings to calculate stats
-        const response = await fetch('/api/admin/bookings?limit=1000', {
+        const response = await fetch('/api/admin/dashboard/stats', {
           credentials: 'include',
         });
 
         if (response.ok) {
           const data = await response.json();
-          const bookings = data.bookings || [];
-
           setStats({
-            totalBookings: data.pagination?.total || bookings.length,
-            pendingBookings: bookings.filter((b: { status: string }) => b.status === 'pending').length,
-            confirmedBookings: bookings.filter((b: { status: string }) => b.status === 'confirmed').length,
-            totalProducts: 0, // Would need products API
-            totalRevenue: bookings.reduce((sum: number, b: { total_amount: number }) => sum + (b.total_amount || 0), 0),
+            totalBookings: data.totalBookings || 0,
+            pendingBookings: data.pendingBookings || 0,
+            confirmedBookings: data.confirmedBookings || 0,
+            checkedInBookings: data.checkedInBookings || 0,
+            totalProducts: data.totalProducts || 0,
+            totalRevenue: data.totalRevenue || 0,
+            todayRevenue: data.todayRevenue || 0,
+            todayArrivalsCount: data.todayArrivalsCount || 0,
+            todayArrivals: data.todayArrivals || [],
+            recentActivity: data.recentActivity || [],
           });
         }
       } catch (error) {

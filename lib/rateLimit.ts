@@ -175,6 +175,16 @@ export const RateLimitPresets = {
     limit: 5,
     windowMs: 60 * 60 * 1000, // 1 hour
   },
+  // 120 requests per minute for admin read operations
+  adminRead: {
+    limit: 120,
+    windowMs: 60 * 1000, // 1 minute
+  },
+  // 30 requests per minute for admin write operations
+  adminWrite: {
+    limit: 30,
+    windowMs: 60 * 1000, // 1 minute
+  },
 };
 
 export default rateLimiter;

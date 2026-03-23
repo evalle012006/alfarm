@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     // Check if user already exists
     const existingUser = await pool.query(
-      'SELECT id, password, role FROM users WHERE email = $1',
+      'SELECT id, password, role, COALESCE(is_shadow, FALSE) as is_shadow FROM users WHERE email = $1',
       [email]
     );
 
@@ -38,9 +38,8 @@ export async function POST(request: NextRequest) {
     if (existingUser.rows.length > 0) {
       const existing = existingUser.rows[0];
       
-      // Check if this is a shadow account (placeholder password from guest checkout)
-      // Shadow accounts have an invalid bcrypt hash that starts with '$2a$10$placeholder'
-      const isShadowAccount = existing.password.includes('placeholder');
+      // Check if this is a shadow account using the is_shadow column (authoritative flag)
+      const isShadowAccount = existing.is_shadow === true;
       
       if (!isShadowAccount) {
         // Real account exists - check if they're trying to re-register
@@ -50,11 +49,11 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Claim the shadow account - update with real password
+      // Claim the shadow account - update with real password and clear shadow flag
       const hashedPassword = await hashPassword(password);
       await pool.query(
         `UPDATE users 
-         SET password = $1, first_name = $2, last_name = $3, phone = COALESCE($4, phone), updated_at = CURRENT_TIMESTAMP
+         SET password = $1, first_name = $2, last_name = $3, phone = COALESCE($4, phone), is_shadow = FALSE, updated_at = CURRENT_TIMESTAMP
          WHERE id = $5`,
         [hashedPassword, firstName, lastName, phone || null, existing.id]
       );

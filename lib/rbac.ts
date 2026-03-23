@@ -104,9 +104,9 @@ export async function getAdminUserFromRequest(request: NextRequest): Promise<Adm
     return null;
   }
   
-  // Fetch fresh user data from database
+  // Fetch fresh user data from database (including is_active check)
   const result = await pool.query(
-    'SELECT id, email, first_name, last_name, role FROM users WHERE id = $1',
+    'SELECT id, email, first_name, last_name, role, is_active FROM users WHERE id = $1',
     [payload.userId]
   );
   
@@ -115,6 +115,11 @@ export async function getAdminUserFromRequest(request: NextRequest): Promise<Adm
   }
   
   const user = result.rows[0];
+  
+  // Reject deactivated staff — invalidates session even if JWT is still valid
+  if (user.is_active === false) {
+    return null;
+  }
   
   // Validate role is in admin allowlist
   if (!isAdminRoleAllowlisted(user.role)) {

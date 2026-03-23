@@ -261,6 +261,88 @@ export async function sendBookingStatusUpdateEmail(
   }
 }
 
+interface PaymentReceiptEmailParams {
+  to: string;
+  guestName: string;
+  bookingId: number;
+  operation: 'collect' | 'refund';
+  amount: number;
+  totalAmount: number;
+  paidAmount: number;
+  paymentMethod?: string;
+}
+
+export async function sendPaymentReceiptEmail(params: PaymentReceiptEmailParams): Promise<boolean> {
+  const { to, guestName, bookingId, operation, amount, totalAmount, paidAmount, paymentMethod } = params;
+
+  const isRefund = operation === 'refund';
+  const subject = isRefund ? 'Refund Processed' : 'Payment Received';
+  const heading = isRefund ? 'Refund Confirmation' : 'Payment Receipt';
+  const headingColor = isRefund ? '#c0392b' : '#2d5a27';
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: linear-gradient(135deg, #2d5a27 0%, #4a7c43 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0;">AlFarm Resort</h1>
+      </div>
+      
+      <div style="background: #fff; padding: 30px; border: 1px solid #eee;">
+        <h2 style="color: ${headingColor};">${heading}</h2>
+        <p>Dear ${guestName},</p>
+        <p>${isRefund
+          ? `A refund of <strong>₱${amount.toLocaleString()}</strong> has been processed for your booking.`
+          : `We have received your payment of <strong>₱${amount.toLocaleString()}</strong>.`
+        }</p>
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Booking ID</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">#${bookingId}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">${isRefund ? 'Refund Amount' : 'Amount Paid'}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">₱${amount.toLocaleString()}</td>
+          </tr>
+          ${paymentMethod ? `<tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Payment Method</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">${paymentMethod}</td>
+          </tr>` : ''}
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Total Amount</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">₱${totalAmount.toLocaleString()}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: bold;">Balance ${isRefund ? 'Remaining' : 'Due'}</td>
+            <td style="padding: 8px; font-weight: bold;">₱${Math.max(0, totalAmount - paidAmount).toLocaleString()}</td>
+          </tr>
+        </table>
+        <p>If you have any questions, please don't hesitate to contact us.</p>
+      </div>
+      
+      <div style="background: #333; color: #fff; padding: 15px; text-align: center; border-radius: 0 0 10px 10px;">
+        <p style="margin: 0; font-size: 12px;">&copy; ${new Date().getFullYear()} AlFarm Resort & Adventure Park</p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: `"AlFarm Resort" <${process.env.SMTP_FROM || 'noreply@alfarm.com'}>`,
+      to,
+      subject: `${subject} - AlFarm Resort #${bookingId}`,
+      html,
+    });
+
+    console.log(`Payment receipt email sent to ${to}`);
+    return true;
+  } catch (error) {
+    console.error('Failed to send payment receipt email:', error);
+    return false;
+  }
+}
+
 interface CancellationEmailParams {
   to: string;
   guestName: string;

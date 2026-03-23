@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
         al.created_at,
         COALESCE(u.first_name || ' ' || u.last_name, 'System') AS actor_name
       FROM audit_logs al
-      LEFT JOIN users u ON al.actor_id = u.id
+      LEFT JOIN users u ON al.actor_user_id = u.id
       ORDER BY al.created_at DESC
       LIMIT 10
     `);

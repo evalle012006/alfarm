@@ -13,6 +13,25 @@ interface BookingEditModalProps {
     onSave: () => void;
 }
 
+// Valid status transitions: from → allowed targets (always includes self)
+const STATUS_TRANSITIONS: Record<string, string[]> = {
+    pending:     ['pending', 'confirmed', 'cancelled'],
+    confirmed:   ['confirmed', 'checked_in', 'cancelled'],
+    checked_in:  ['checked_in', 'checked_out'],
+    checked_out: ['checked_out', 'completed'],
+    completed:   ['completed'],
+    cancelled:   ['cancelled', 'pending'],   // allow re-open
+};
+
+const STATUS_LABELS: Record<string, string> = {
+    pending: 'Pending',
+    confirmed: 'Confirmed',
+    checked_in: 'Checked In',
+    checked_out: 'Checked Out',
+    completed: 'Completed',
+    cancelled: 'Cancelled',
+};
+
 export default function BookingEditModal({ isOpen, onClose, booking, onSave }: BookingEditModalProps) {
     const [isSaving, setIsSaving] = useState(false);
     const [formData, setFormData] = useState({
@@ -176,13 +195,15 @@ export default function BookingEditModal({ isOpen, onClose, booking, onSave }: B
                                 value={formData.status}
                                 onChange={e => setFormData({ ...formData, status: e.target.value })}
                             >
-                                <option value="pending">Pending</option>
-                                <option value="confirmed">Confirmed</option>
-                                <option value="checked_in">Checked In</option>
-                                <option value="checked_out">Checked Out</option>
-                                <option value="completed">Completed</option>
-                                <option value="cancelled">Cancelled</option>
+                                {(STATUS_TRANSITIONS[booking?.status] || Object.keys(STATUS_LABELS)).map((s) => (
+                                    <option key={s} value={s}>{STATUS_LABELS[s] || s}</option>
+                                ))}
                             </select>
+                            {booking?.status && formData.status !== booking.status && (
+                                <p className="mt-1 text-xs text-orange-500 font-medium">
+                                    Changing status from {STATUS_LABELS[booking.status]} → {STATUS_LABELS[formData.status]}
+                                </p>
+                            )}
                         </div>
                         <div>
                             <label className={labelClass}>Booking Date</label>

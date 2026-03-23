@@ -3,6 +3,48 @@ import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 import { isAdminRoleAllowlisted } from '@/lib/roles';
 
+// ============================================
+// EDGE-COMPATIBLE RATE LIMITER (in-memory)
+// ============================================
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkAdminRateLimit(ip: string, method: string): Response | null {
+  const isWrite = method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS';
+  const limit = isWrite ? 30 : 120;
+  const windowMs = 60_000; // 1 minute
+  const key = `admin:${ip}:${isWrite ? 'w' : 'r'}`;
+  const now = Date.now();
+
+  const entry = rateLimitMap.get(key);
+  if (!entry || entry.resetAt < now) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + windowMs });
+    return null;
+  }
+  if (entry.count >= limit) {
+    const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
+    return new Response(
+      JSON.stringify({ error: 'Too many requests. Please try again later.' }),
+      {
+        status: 429,
+        headers: {
+          'Content-Type': 'application/json',
+          'Retry-After': retryAfter.toString(),
+          'X-RateLimit-Limit': limit.toString(),
+          'X-RateLimit-Remaining': '0',
+        },
+      }
+    );
+  }
+  entry.count++;
+  return null;
+}
+
+// Cleanup stale entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  rateLimitMap.forEach((v, k) => { if (v.resetAt < now) rateLimitMap.delete(k); });
+}, 5 * 60_000);
+
 /**
  * Admin cookie name - must match the one set in /api/auth/login
  */
@@ -118,6 +160,12 @@ export async function middleware(request: NextRequest) {
   // ADMIN API ROUTE PROTECTION
   // ============================================
   if (pathname.startsWith('/api/admin')) {
+    // Rate limit check
+    const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || request.headers.get('x-real-ip')
+      || 'unknown';
+    const rateLimitResponse = checkAdminRateLimit(clientIp, request.method);
+    if (rateLimitResponse) return rateLimitResponse;
 
     const token = request.cookies.get(ADMIN_COOKIE_NAME)?.value;
 

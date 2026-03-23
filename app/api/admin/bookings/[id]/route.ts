@@ -3,6 +3,7 @@ import pool from '@/lib/db';
 import { requirePermission } from '@/lib/rbac';
 import { handleUnexpectedError, ErrorResponses } from '@/lib/apiErrors';
 import { logAuditWithRequest, AuditActions, EntityTypes, createSnapshot } from '@/lib/audit';
+import { sendBookingCancellationEmail } from '@/lib/email';
 
 // GET - Get single booking details
 export async function GET(
@@ -312,7 +313,7 @@ export async function DELETE(
 
     // Get current status for audit snapshot
     const existingBooking = await pool.query(
-      'SELECT id, status, guest_first_name, guest_last_name FROM bookings WHERE id = $1',
+      'SELECT id, status, guest_first_name, guest_last_name, guest_email, booking_date FROM bookings WHERE id = $1',
       [bookingId]
     );
 
@@ -347,6 +348,17 @@ export async function DELETE(
         cancelledBy: 'admin',
       },
     }).catch((err) => console.error('Audit log failed:', err));
+
+    // Send cancellation email (fire-and-forget)
+    const bk = existingBooking.rows[0];
+    if (bk.guest_email) {
+      sendBookingCancellationEmail({
+        to: bk.guest_email,
+        guestName: `${bk.guest_first_name} ${bk.guest_last_name}`,
+        bookingId,
+        bookingDate: bk.booking_date,
+      }).catch((err) => console.error('Cancellation email failed:', err));
+    }
 
     return NextResponse.json({
       message: 'Booking cancelled successfully',

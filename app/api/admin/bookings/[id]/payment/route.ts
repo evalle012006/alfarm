@@ -5,6 +5,7 @@ import { requirePermission, requireAnyPermission } from '@/lib/rbac';
 import { handleUnexpectedError, ErrorResponses } from '@/lib/apiErrors';
 import { logAuditWithRequest, AuditActions, EntityTypes, createSnapshot } from '@/lib/audit';
 import { createRefund } from '@/lib/paymongo';
+import { sendPaymentReceiptEmail } from '@/lib/email';
 
 /**
  * Payment operations
@@ -80,7 +81,7 @@ export async function PATCH(
     // Get current booking state
     const existingResult = await pool.query(
       `SELECT id, status, payment_status, payment_method, total_amount, paid_amount,
-              paymongo_payment_id, guest_first_name, guest_last_name, notes
+              paymongo_payment_id, guest_first_name, guest_last_name, guest_email, notes
        FROM bookings WHERE id = $1`,
       [bookingId]
     );
@@ -217,6 +218,22 @@ export async function PATCH(
         notes: notes || null,
       },
     });
+
+    // Send payment receipt email for collect and refund (fire-and-forget)
+    if ((operation === 'collect' || operation === 'refund') && booking.guest_email) {
+      sendPaymentReceiptEmail({
+        to: booking.guest_email,
+        guestName: `${booking.guest_first_name} ${booking.guest_last_name}`,
+        bookingId,
+        operation,
+        amount: operation === 'collect'
+          ? (amount || parseFloat(booking.total_amount))
+          : parseFloat(booking.total_amount),
+        totalAmount: parseFloat(booking.total_amount),
+        paidAmount: newPaidAmount,
+        paymentMethod: booking.payment_method || undefined,
+      }).catch((err) => console.error('Payment receipt email failed:', err));
+    }
 
     return NextResponse.json({
       message: `Payment ${operation} successful`,

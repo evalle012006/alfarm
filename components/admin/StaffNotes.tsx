@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Save, Loader2, StickyNote } from 'lucide-react';
 import { toast } from 'sonner';
+import { adminFetch } from '@/lib/adminFetch';
 
 interface StaffNotesProps {
     bookingId: string | number;
@@ -16,7 +17,7 @@ export default function StaffNotes({ bookingId, initialNotes }: StaffNotesProps)
     const handleSave = async () => {
         try {
             setIsLoading(true);
-            const res = await fetch(`/api/admin/bookings/${bookingId}/notes`, {
+            const res = await adminFetch(`/api/admin/bookings/${bookingId}/notes`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ notes }),

@@ -9,6 +9,7 @@ import Notification, { NotificationType } from '@/components/ui/Notification';
 import BookingStepper from '@/components/BookingStepper';
 import { getBookingCartItems, useBooking } from '@/lib/BookingContext';
 import { useAuth } from '@/lib/AuthContext';
+import TermsModal from '@/components/ui/TermsModal';
 
 interface ProductOption {
   id: number;
@@ -36,6 +37,7 @@ function BookingCheckoutContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const [notification, setNotification] = useState<{ show: boolean; message: string; type: NotificationType }>(
     { show: false, message: '', type: 'error' }
   );
@@ -348,7 +350,14 @@ function BookingCheckoutContent() {
                       className="mt-1 w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
                     />
                     <label htmlFor="terms" className="text-sm text-gray-700 dark:text-gray-300 flex-1">
-                      I agree to the resort house rules and cancellation policy. I understand this is a demo booking system.
+                      I agree to the resort{' '}
+                      <button
+                        type="button"
+                        onClick={() => setShowTermsModal(true)}
+                        className="text-primary font-semibold underline underline-offset-2 hover:text-primary-600 transition-colors"
+                      >
+                        Terms & Conditions, house rules, and cancellation policy
+                      </button>.
                     </label>
                   </div>
                 </div>
@@ -511,7 +520,7 @@ function BookingCheckoutContent() {
                         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                       </svg>
                       <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
-                        Demo payment only. This will create a booking record and send an email confirmation if Mailtrap is configured.
+                        You will be redirected to our secure payment partner to complete payment. A confirmation email will be sent once your booking is confirmed.
                       </p>
                     </div>
                   </div>
@@ -521,6 +530,8 @@ function BookingCheckoutContent() {
           </div>
         </div>
       </section>
+
+      <TermsModal isOpen={showTermsModal} onClose={() => setShowTermsModal(false)} />
 
       <Footer />
 

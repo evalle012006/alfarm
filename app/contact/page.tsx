@@ -166,12 +166,18 @@ export default function Contact() {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-3xl font-bold text-accent mb-8 text-center dark:text-white">Find Us</h2>
-            <div className="bg-gray-300 h-96 rounded-xl flex items-center justify-center dark:bg-slate-900">
-              <div className="text-center">
-                <div className="text-6xl mb-4">🗺️</div>
-                <p className="text-gray-600 dark:text-white">Map will be integrated here</p>
-                <p className="text-sm text-gray-500 mt-2 dark:text-white">Google Maps / OpenStreetMap</p>
-              </div>
+            <div className="rounded-xl overflow-hidden shadow-lg">
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3959.9051023153247!2d122.15683761137832!3d7.020440317158189!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3250453b31215075%3A0xe7b097d8b864667a!2sVirnell%20Farm%20and%20Mountain%20Park!5e0!3m2!1sen!2sph!4v1774240164944!5m2!1sen!2sph"
+                width="100%"
+                height="400"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="AlFarm Resort Location"
+                className="w-full"
+              />
             </div>
           </div>
         </div>

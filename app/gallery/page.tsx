@@ -1,53 +1,88 @@
+'use client';
+
+import { useState } from 'react';
+import Image from 'next/image';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
+import Lightbox from '@/components/ui/Lightbox';
 
 export default function Gallery() {
   const categories = [
     {
-      name: 'Accommodations',
+      name: 'Rooms & Terraces',
       icon: '🏨',
       images: [
-        { title: 'Standard Room Interior', desc: 'Cozy and comfortable' },
-        { title: 'Deluxe Suite', desc: 'Spacious luxury' },
-        { title: 'Private Villa', desc: 'Ultimate privacy' },
-        { title: 'Nature Cabin', desc: 'Rustic charm' },
+        { title: 'Blue Room (AC)', src: '/images/accommodation/blue_room/blue_room_1.jpeg' },
+        { title: 'Blue Room Interior', src: '/images/accommodation/blue_room/blue_room_3.jpeg' },
+        { title: 'Orange Terrace', src: '/images/accommodation/orange_terrace/orange_terrace_1.jpeg' },
+        { title: 'Orange Terrace View', src: '/images/accommodation/orange_terrace/orange_terrace_3.jpeg' },
+        { title: 'Yellow Terrace Standard', src: '/images/accommodation/yellow_terrace/yellow_terrace_1.jpeg' },
+        { title: 'Yellow Terrace Deluxe', src: '/images/accommodation/yellow_terrace_1/yellow_terrace_11.jpeg' },
       ],
     },
     {
-      name: 'Adventure Activities',
-      icon: '🪂',
+      name: 'Cottages & Rest Houses',
+      icon: '🏡',
       images: [
-        { title: 'Zip-Lining', desc: 'Soaring through trees' },
-        { title: 'Rock Climbing', desc: 'Reach new heights' },
-        { title: 'Hiking Trails', desc: 'Explore nature' },
-        { title: 'Obstacle Course', desc: 'Team challenges' },
+        { title: 'Dorm Style Cottage', src: '/images/accommodation/dorm_style_cottage/dorm_style_cottage_1.jpeg' },
+        { title: 'Dorm Style Interior', src: '/images/accommodation/dorm_style_cottage/dorm_style_cottage_4.jpeg' },
+        { title: 'Native Style Cottage', src: '/images/accommodation/native_style_room/native_style_room_1.jpeg' },
+        { title: 'Native Style Interior', src: '/images/accommodation/native_style_room/native_style_room_3.jpeg' },
+        { title: 'Screen Cottage', src: '/images/accommodation/screen_cottages/screen_cottages_1.jpeg' },
+        { title: 'Screen Cottage Interior', src: '/images/accommodation/screen_cottages/screen_cottages_5.jpeg' },
+        { title: 'Mini Rest House', src: '/images/accommodation/mini_resthouse/mini_resthouse_1.jpeg' },
+        { title: 'Mini Rest House Interior', src: '/images/accommodation/mini_resthouse/mini_resthouse_6.jpeg' },
+        { title: 'Rest House', src: '/images/accommodation/rest_house/rest_house_1.jpeg' },
+        { title: 'Rest House Interior', src: '/images/accommodation/rest_house/rest_house_7.jpeg' },
       ],
     },
     {
-      name: 'Nature & Wildlife',
-      icon: '🦌',
-      images: [
-        { title: 'Deer in Natural Habitat', desc: 'Wildlife encounters' },
-        { title: 'Forest Trails', desc: 'Lush greenery' },
-        { title: 'Mountain Views', desc: 'Breathtaking vistas' },
-        { title: 'Sunset Panorama', desc: 'Golden hour magic' },
-      ],
-    },
-    {
-      name: 'Facilities',
+      name: 'Pools & Facilities',
       icon: '🏊',
       images: [
-        { title: 'Adventure Pool', desc: 'Family fun' },
-        { title: 'Restaurant', desc: 'Farm-to-table dining' },
-        { title: 'Reception Area', desc: 'Welcome center' },
-        { title: 'Outdoor Deck', desc: 'Relaxation space' },
+        { title: 'Swimming Pool', src: '/images/accommodation/pools/pool_1.jpeg' },
+        { title: 'Pool Area', src: '/images/accommodation/pools/pool_2.jpeg' },
+        { title: 'Function Hall', src: '/images/accommodation/function_hall/function_hall_1.jpeg' },
+        { title: 'Function Hall Interior', src: '/images/accommodation/function_hall/function_hall_3.jpeg' },
+        { title: 'Poolside Tables', src: '/images/accommodation/tables/table_1.jpeg' },
+        { title: 'Outdoor Seating', src: '/images/accommodation/tables/table_3.jpeg' },
+      ],
+    },
+    {
+      name: 'Adventure',
+      icon: '�️',
+      images: [
+        { title: 'Adventure Activity', src: '/images/features/adventure/adventure-1.jpg' },
+        { title: 'Outdoor Fun', src: '/images/features/adventure/adventure-2.jpg' },
+        { title: 'Park Exploration', src: '/images/features/adventure/adventure-3.jpg' },
+        { title: 'Nature Trail', src: '/images/features/adventure/adventure-4.jpg' },
       ],
     },
   ];
 
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [currentGallery, setCurrentGallery] = useState<{ name: string; images: string[] }>({ name: '', images: [] });
+  const [photoIndex, setPhotoIndex] = useState(0);
+
+  const openLightbox = (categoryName: string, images: { title: string; src: string }[], startIndex: number) => {
+    setCurrentGallery({ name: categoryName, images: images.map(img => img.src) });
+    setPhotoIndex(startIndex);
+    setLightboxOpen(true);
+  };
+
   return (
     <>
       <Navigation />
+
+      <Lightbox
+        isOpen={lightboxOpen}
+        images={currentGallery.images}
+        currentIndex={photoIndex}
+        onClose={() => setLightboxOpen(false)}
+        onPrev={() => setPhotoIndex((prev) => (prev > 0 ? prev - 1 : currentGallery.images.length - 1))}
+        onNext={() => setPhotoIndex((prev) => (prev < currentGallery.images.length - 1 ? prev + 1 : 0))}
+        title={currentGallery.name}
+      />
 
       {/* Hero Section */}
       <section className="py-20 hero-gradient">
@@ -75,23 +110,27 @@ export default function Gallery() {
               <h2 className="text-3xl font-bold text-accent mb-2 dark:text-white">{category.name}</h2>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
               {category.images.map((image, imgIndex) => (
-                <div 
+                <div
                   key={imgIndex}
                   className="group relative overflow-hidden rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer"
+                  onClick={() => openLightbox(category.name, category.images, imgIndex)}
                 >
-                  <div className="aspect-square bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-                    <div className="text-center p-6">
-                      <div className="text-6xl mb-4">{category.icon}</div>
-                      <h3 className="font-bold text-accent mb-2 dark:text-white">{image.title}</h3>
-                      <p className="text-sm text-gray-600 dark:text-white">{image.desc}</p>
-                    </div>
+                  <div className="aspect-[4/3] relative">
+                    <Image
+                      src={image.src}
+                      alt={image.title}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-110"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      quality={75}
+                    />
                   </div>
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end">
                     <div className="p-4 text-white w-full">
                       <p className="font-semibold">{image.title}</p>
-                      <p className="text-sm text-white/90">{image.desc}</p>
+                      <p className="text-sm text-white/80">Click to enlarge</p>
                     </div>
                   </div>
                 </div>
@@ -117,33 +156,6 @@ export default function Gallery() {
                 <p className="text-sm text-gray-500 mt-2 dark:text-white">Coming Soon</p>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Instagram Feed Section */}
-      <section className="py-16 bg-white dark:bg-slate-950">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-accent mb-2 dark:text-white">Follow Our Adventures</h2>
-            <p className="text-gray-600 mb-4 dark:text-white">@AlFarmResort on Instagram</p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 max-w-7xl mx-auto">
-            {[...Array(6)].map((_, index) => (
-              <div 
-                key={index}
-                className="aspect-square bg-gradient-to-br from-primary/10 to-secondary/10 rounded-lg flex items-center justify-center cursor-pointer hover:scale-105 transition-transform"
-              >
-                <span className="text-4xl">📷</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center mt-8">
-            <a href="#" className="btn-primary inline-block">
-              Follow Us on Instagram
-            </a>
           </div>
         </div>
       </section>

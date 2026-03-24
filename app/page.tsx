@@ -127,15 +127,13 @@ export default function Home() {
       id: 'adventure',
       icon: '🏔️',
       title: 'Adventure Activities',
-      description: 'Zip-lining, hiking trails, rock climbing, and more thrilling adventures across our expansive park.',
+      description: 'Horseback riding, cave tours, and more thrilling adventures across our expansive park.',
       color: 'primary',
       images: [
         '/images/features/adventure/adventure-1.jpg',
         '/images/features/adventure/adventure-2.jpg',
         '/images/features/adventure/adventure-3.jpg',
         '/images/features/adventure/adventure-4.jpg',
-        '/images/features/adventure/adventure-5.jpg',
-        '/images/features/adventure/adventure-6.jpg'
       ]
     },
     {
@@ -145,27 +143,23 @@ export default function Home() {
       description: 'Surrounded by lush forests and cool air, reconnect with nature and find your calm.',
       color: 'secondary',
       images: [
-        '/images/features/nature/nature-1.jpg',
-        '/images/features/nature/nature-2.jpg',
-        '/images/features/nature/nature-3.jpg',
-        '/images/features/nature/nature-4.jpg',
-        '/images/features/nature/nature-5.jpg',
-        '/images/features/nature/nature-6.jpg'
+        '/images/accommodation/rest_house/rest_house_1.jpeg',
+        '/images/accommodation/native_style_room/native_style_room_1.jpeg',
+        '/images/accommodation/screen_cottages/screen_cottages_1.jpeg',
+        '/images/accommodation/dorm_style_cottage/dorm_style_cottage_1.jpeg',
       ]
     },
     {
       id: 'luxury',
       icon: '🏨',
       title: 'Luxury Comfort',
-      description: 'From cozy cabins to private villas, enjoy modern amenities and thoughtful service.',
+      description: 'From cozy cottages to spacious rest houses, enjoy modern amenities and thoughtful service.',
       color: 'accent',
       images: [
-        '/images/features/luxury/luxury-1.jpg',
-        '/images/features/luxury/luxury-2.jpg',
-        '/images/features/luxury/luxury-3.jpg',
-        '/images/features/luxury/luxury-4.jpg',
-        '/images/features/luxury/luxury-5.jpg',
-        '/images/features/luxury/luxury-6.jpg'
+        '/images/accommodation/blue_room/blue_room_1.jpeg',
+        '/images/accommodation/orange_terrace/orange_terrace_1.jpeg',
+        '/images/accommodation/yellow_terrace/yellow_terrace_1.jpeg',
+        '/images/accommodation/mini_resthouse/mini_resthouse_1.jpeg',
       ]
     }
   ];
@@ -607,26 +601,18 @@ export default function Home() {
             subtitle="Exciting activities for everyone"
           />
 
-          <div className="grid md:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
             <div className="text-center p-6 rounded-2xl border border-gray-100 bg-gradient-to-br from-primary/5 to-primary/10 hover:shadow-lg transition-shadow dark:border-slate-700 dark:from-primary/20 dark:to-primary/40">
-              <div className="text-4xl mb-3">🪂</div>
-              <h4 className="text-lg font-semibold text-accent dark:text-white">Zip-Lining</h4>
-              <p className="mt-2 text-xs text-gray-600 dark:text-white">Soar above the trees on our signature zip-line course.</p>
+              <div className="text-4xl mb-3">🏇</div>
+              <h4 className="text-lg font-semibold text-accent dark:text-white">Horse Back Riding</h4>
+              <p className="mt-2 text-xs text-gray-600 dark:text-white">Ride through scenic trails and open meadows on well-trained horses.</p>
+              <p className="mt-2 text-xs font-semibold text-primary">₱50 per 5 minutes</p>
             </div>
             <div className="text-center p-6 rounded-2xl border border-gray-100 bg-gradient-to-br from-secondary/5 to-secondary/10 hover:shadow-lg transition-shadow dark:border-slate-700 dark:from-secondary/20 dark:to-secondary/40">
-              <div className="text-4xl mb-3">🥾</div>
-              <h4 className="text-lg font-semibold text-accent dark:text-white">Hiking Trails</h4>
-              <p className="mt-2 text-xs text-gray-600 dark:text-white">Guided and self-paced hikes through scenic mountain paths.</p>
-            </div>
-            <div className="text-center p-6 rounded-2xl border border-gray-100 bg-gradient-to-br from-primary/5 to-primary/10 hover:shadow-lg transition-shadow dark:border-slate-700 dark:from-primary/20 dark:to-primary/40">
-              <div className="text-4xl mb-3">🧗</div>
-              <h4 className="text-lg font-semibold text-accent dark:text-white">Rock Climbing</h4>
-              <p className="mt-2 text-xs text-gray-600 dark:text-white">Challenge yourself on beginner to advanced climbing walls.</p>
-            </div>
-            <div className="text-center p-6 rounded-2xl border border-gray-100 bg-gradient-to-br from-secondary/5 to-secondary/10 hover:shadow-lg transition-shadow dark:border-slate-700 dark:from-secondary/20 dark:to-secondary/40">
-              <div className="text-4xl mb-3">🦌</div>
-              <h4 className="text-lg font-semibold text-accent dark:text-white">Wildlife Tours</h4>
-              <p className="mt-2 text-xs text-gray-600 dark:text-white">Discover local wildlife with our guided eco-tours.</p>
+              <div className="text-4xl mb-3">🔦</div>
+              <h4 className="text-lg font-semibold text-accent dark:text-white">Cave Tour</h4>
+              <p className="mt-2 text-xs text-gray-600 dark:text-white">Discover hidden wonders of ancient limestone caves with experienced guides.</p>
+              <p className="mt-2 text-xs font-semibold text-primary">₱50 per person · Min 7 persons</p>
             </div>
           </div>
 

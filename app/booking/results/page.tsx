@@ -9,6 +9,9 @@ import Notification, { NotificationType } from '@/components/ui/Notification';
 import BookingStepper from '@/components/BookingStepper';
 import { useBooking } from '@/lib/BookingContext';
 
+import Lightbox from '@/components/ui/Lightbox';
+import Image from 'next/image';
+
 interface ProductOption {
   id: number;
   title: string;
@@ -22,8 +25,39 @@ interface ProductOption {
   imageUrl?: string;
 }
 
-import Lightbox from '@/components/ui/Lightbox';
-import Image from 'next/image';
+// Static image map — first image per product, keyed by lowercase product name.
+// Used as the primary source for card images; falls back to product.imageUrl then placeholder.
+const IMAGE_MAP: Record<string, string> = {
+  'poolside table': '/images/accommodation/tables/table_2.jpeg',
+  'screen cottage (small)': '/images/accommodation/screen_cottages/screen_cottages_1.jpeg',
+  'screen cottage (large)': '/images/accommodation/screen_cottages/screen_cottages_1.jpeg',
+  'open kubo': '/images/accommodation/tables/table_2.jpeg',
+  'mating cottage': '/images/accommodation/screen_cottages/screen_cottages_1.jpeg',
+  'function hall': '/images/accommodation/function_hall/function_hall_1.jpeg',
+  'duplex room (fan)': '/images/accommodation/blue_room/blue_room_6.jpeg',
+  'duplex room (ac)': '/images/accommodation/blue_room/blue_room_6.jpeg',
+  'blue room (ac)': '/images/accommodation/blue_room/blue_room_6.jpeg',
+  'native style cottage': '/images/accommodation/native_style_room/native_style_room_1.jpeg',
+  'orange terrace': '/images/accommodation/orange_terrace/orange_terrace_1.jpeg',
+  'mini rest house': '/images/accommodation/mini_resthouse/mini_resthouse_1.jpeg',
+  'dorm style cottage (small)': '/images/accommodation/dorm_style_cottage/dorm_style_cottage_6.jpeg',
+  'dorm style cottage (large)': '/images/accommodation/dorm_style_cottage/dorm_style_cottage_6.jpeg',
+  'yellow terrace standard': '/images/accommodation/yellow_terrace/yellow_terrace_2.jpeg',
+  'yellow terrace deluxe': '/images/accommodation/yellow_terrace_1/yellow_terrace_55.jpeg',
+  'rest house': '/images/accommodation/rest_house/rest_house_12.jpeg',
+  'horseback ride': '/images/accommodation/pools/pool_1.jpeg',
+  'cave tour': '/images/accommodation/pools/pool_2.jpeg',
+  'shorts': '/images/accommodation/pools/pool_1.jpeg',
+  'cooking utensils': '/images/accommodation/pools/pool_1.jpeg',
+  'extra bed': '/images/accommodation/pools/pool_1.jpeg',
+  'basketball/volleyball': '/images/accommodation/pools/pool_1.jpeg',
+};
+
+const PLACEHOLDER_IMAGE = '/images/accommodation/pools/pool_1.jpeg';
+
+function getProductImage(product: ProductOption): string {
+  return IMAGE_MAP[product.title.toLowerCase()] || product.imageUrl || PLACEHOLDER_IMAGE;
+}
 
 interface AvailabilityItem {
   id: number;
@@ -67,11 +101,8 @@ function BookingResultsContent() {
   const [currentGallery, setCurrentGallery] = useState<{ name: string, images: string[] }>({ name: '', images: [] });
   const [photoIndex, setPhotoIndex] = useState(0);
 
-  const openGallery = (name: string, firstImage: string) => {
-    // We only have the primary image from the DB, but we can infer the folder
-    // For a better experience, we could fetch all images or just show the one
-    // For now, let's show the primary image in the lightbox
-    setCurrentGallery({ name, images: [firstImage] });
+  const openGallery = (name: string, image: string) => {
+    setCurrentGallery({ name, images: [image] });
     setPhotoIndex(0);
     setLightboxOpen(true);
   };
@@ -414,27 +445,25 @@ function BookingResultsContent() {
                       }`}
                   >
                     {/* Product Image */}
-                    {product.imageUrl && (
-                      <div
-                        className="relative h-48 w-full overflow-hidden rounded-t-3xl cursor-pointer group/img"
-                        onClick={() => openGallery(product.title, product.imageUrl!)}
-                      >
-                        <Image
-                          src={product.imageUrl}
-                          alt={product.title}
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover/img:scale-110"
-                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                          priority
-                          quality={70}
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/20 transition-all flex items-center justify-center opacity-0 group-hover/img:opacity-100">
-                          <div className="bg-white/90 text-primary px-3 py-1.5 rounded-lg text-xs font-bold">
-                            View Photo
-                          </div>
+                    <div
+                      className="relative h-48 w-full overflow-hidden rounded-t-3xl cursor-pointer group/img"
+                      onClick={() => openGallery(product.title, getProductImage(product))}
+                    >
+                      <Image
+                        src={getProductImage(product)}
+                        alt={product.title}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover/img:scale-110"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        priority={false}
+                        quality={70}
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/20 transition-all flex items-center justify-center opacity-0 group-hover/img:opacity-100">
+                        <div className="bg-white/90 text-primary px-3 py-1.5 rounded-lg text-xs font-bold">
+                          View Photo
                         </div>
                       </div>
-                    )}
+                    </div>
 
                     <div className="flex-1 p-6">
                       <div className="mb-4 flex items-start justify-between gap-2">

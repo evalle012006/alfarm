@@ -23,6 +23,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     const navigation = [
         { name: 'Dashboard', href: '/admin/dashboard', icon: '📊' },
+        { name: 'QR Check-In', href: '/admin/checkin', icon: '📷' },
         { name: 'Bookings', href: '/admin/bookings', icon: '📋' },
         { name: 'Guests', href: '/admin/guests', icon: '👤' },
         { name: 'Products', href: '/admin/products', icon: '🏨' },

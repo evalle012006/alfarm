@@ -10,13 +10,15 @@ import PrimaryButton from '@/components/ui/PrimaryButton';
 import TagToggle from '@/components/ui/TagToggle';
 import CountSelector from '@/components/ui/CountSelector';
 import Notification, { NotificationType } from '@/components/ui/Notification';
-import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import TooltipHighlight from '@/components/ui/TooltipHighlight';
+import { Suspense, useState, useRef, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-export default function Home() {
+function HomeContent() {
   const router = useRouter();
-  const { reset, setSearch } = useBooking();
+  const searchParams = useSearchParams();
+  const { state: bookingState, reset, setSearch, setPendingProduct } = useBooking();
   const today = new Date().toISOString().split('T')[0];
   const tomorrow = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; })();
   const [bookingType, setBookingType] = useState('Day-use');
@@ -26,6 +28,39 @@ export default function Home() {
   const [children, setChildren] = useState(0);
   const [showGuestMenu, setShowGuestMenu] = useState(false);
   const guestMenuRef = useRef<HTMLDivElement>(null);
+  const dateInputRef = useRef<HTMLDivElement>(null);
+  const guestSelectorRef = useRef<HTMLDivElement>(null);
+
+  // Guided tooltip state — activated when redirected from accommodations page
+  const isGuided = searchParams.get('guide') === 'booking';
+  const [guideStep, setGuideStep] = useState<'date' | 'guests' | null>(null);
+  const [guideDismissed, setGuideDismissed] = useState(false);
+
+  // Activate guide on mount if redirected from accommodations page with a pending product
+  useEffect(() => {
+    if (isGuided && bookingState.pendingProductId && !guideDismissed) {
+      setGuideStep('date');
+    }
+  }, [isGuided, bookingState.pendingProductId, guideDismissed]);
+
+  // Advance guide from step 1 (date) to step 2 (guests) when user interacts with date
+  const handleDateChangeGuided = useCallback((value: string) => {
+    setCheckInDate(value);
+    if (bookingType === 'Overnight' && (!checkOutDate || checkOutDate <= value)) {
+      const nextDay = new Date(value);
+      nextDay.setDate(nextDay.getDate() + 1);
+      setCheckOutDate(nextDay.toISOString().split('T')[0]);
+    }
+    // Advance to guest step after a short delay so user sees the transition
+    if (guideStep === 'date') {
+      setTimeout(() => setGuideStep('guests'), 400);
+    }
+  }, [guideStep, bookingType, checkOutDate]);
+
+  const dismissGuide = useCallback(() => {
+    setGuideStep(null);
+    setGuideDismissed(true);
+  }, []);
 
   const [notification, setNotification] = useState<{
     show: boolean;
@@ -119,7 +154,15 @@ export default function Home() {
       params.append('check_out', checkOutDate);
     }
 
+    // If there's a pending product from the accommodations page, carry it forward
+    if (bookingState.pendingProductId) {
+      params.append('preselect', bookingState.pendingProductId.toString());
+    }
+
     router.push(`/booking/results?${params.toString()}`);
+
+    // Dismiss guide and clear pending product after navigation
+    dismissGuide();
   };
 
   const features = [
@@ -299,7 +342,7 @@ export default function Home() {
                 />
 
                 <div className={`grid grid-cols-1 ${bookingType === 'Overnight' ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-4 mb-6`}>
-                  <div>
+                  <div ref={dateInputRef}>
                     <label className="text-xs font-semibold text-gray-500 dark:text-white">
                       {bookingType === 'Overnight' ? 'Check-in' : 'Date'}
                     </label>
@@ -308,18 +351,17 @@ export default function Home() {
                         type="date"
                         min={new Date().toISOString().split('T')[0]}
                         value={checkInDate}
-                        onChange={(e) => {
-                          setCheckInDate(e.target.value);
-                          // Auto-set check-out to next day if not set or invalid
-                          if (bookingType === 'Overnight' && (!checkOutDate || checkOutDate <= e.target.value)) {
-                            const nextDay = new Date(e.target.value);
-                            nextDay.setDate(nextDay.getDate() + 1);
-                            setCheckOutDate(nextDay.toISOString().split('T')[0]);
-                          }
-                        }}
+                        onChange={(e) => handleDateChangeGuided(e.target.value)}
                         className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                       />
                     </div>
+                    <TooltipHighlight
+                      targetRef={dateInputRef}
+                      message="Select a schedule first"
+                      visible={guideStep === 'date'}
+                      onDismiss={dismissGuide}
+                      position="bottom"
+                    />
                   </div>
 
                   {bookingType === 'Overnight' && (
@@ -337,16 +379,28 @@ export default function Home() {
                     </div>
                   )}
 
-                  <div className="relative" ref={guestMenuRef}>
+                  <div className="relative" ref={guestMenuRef} >
+                    <div ref={guestSelectorRef}>
                     <label className="text-xs font-semibold text-gray-500 dark:text-white">Guests</label>
                     <button
                       type="button"
-                      onClick={() => setShowGuestMenu(!showGuestMenu)}
+                      onClick={() => {
+                        setShowGuestMenu(!showGuestMenu);
+                        if (guideStep === 'guests') dismissGuide();
+                      }}
                       className="w-full mt-1 flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800 transition-colors"
                     >
                       <span>{adults + children} guests</span>
                       <span className="text-xs text-primary font-medium">Edit</span>
                     </button>
+                    </div>
+                    <TooltipHighlight
+                      targetRef={guestSelectorRef}
+                      message="Then set the number of guests"
+                      visible={guideStep === 'guests'}
+                      onDismiss={dismissGuide}
+                      position="bottom"
+                    />
 
                     {/* Guest Menu Dropdown */}
                     {showGuestMenu && (
@@ -647,5 +701,17 @@ export default function Home() {
 
       <Footer />
     </>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    }>
+      <HomeContent />
+    </Suspense>
   );
 }

@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
-import Link from 'next/link';
 import Image from 'next/image';
 import Lightbox from '@/components/ui/Lightbox';
+import { useBooking } from '@/lib/BookingContext';
 
 // Static gallery images for products that have multi-image folders on disk.
 // Keys are matched against the lowercase product name from the DB.
@@ -201,12 +203,6 @@ function getGalleryImages(product: Product): string[] {
   return [];
 }
 
-function getBookNowHref(product: Product): string {
-  // Use the product's time_slot to determine the correct booking type
-  const bookingType = product.time_slot === 'night' ? 'overnight' : 'day';
-  return `/?type=${bookingType}`;
-}
-
 function getPricingLabel(product: Product): string {
   switch (product.pricing_unit) {
     case 'per_night': return '/ night';
@@ -217,6 +213,9 @@ function getPricingLabel(product: Product): string {
 }
 
 export default function Rooms() {
+  const router = useRouter();
+  const { state: bookingState, setPendingProduct } = useBooking();
+
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -262,6 +261,22 @@ export default function Rooms() {
 
   const dayItems = accommodations.filter(p => p.time_slot === 'day' || p.time_slot === 'any');
   const nightItems = accommodations.filter(p => p.time_slot === 'night' || p.time_slot === 'any');
+
+  const handleBookNow = (product?: Product) => {
+    if (!bookingState.checkInDate) {
+      // Store the selected product and redirect to home with guided tooltips
+      if (product) setPendingProduct(product.id);
+      toast.warning('Set your schedule and guest count first', {
+        description: 'Please select your dates and number of guests before booking.',
+      });
+      router.push('/?guide=booking');
+      return;
+    }
+    const bookingType = product
+      ? (product.time_slot === 'night' ? 'overnight' : 'day')
+      : bookingState.bookingType;
+    router.push(`/booking/results?type=${bookingType}`);
+  };
 
   return (
     <>
@@ -406,12 +421,12 @@ export default function Rooms() {
                                 <span>Gallery</span>
                               </button>
                             )}
-                            <Link
-                              href={getBookNowHref(product)}
+                            <button
+                              onClick={() => handleBookNow(product)}
                               className={`btn-primary py-2.5 text-xs text-center ${gallery.length === 0 ? 'col-span-2' : ''}`}
                             >
                               Book Now
-                            </Link>
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -517,9 +532,9 @@ export default function Rooms() {
           <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
             Choose your perfect accommodation and start your adventure today
           </p>
-          <Link href="/" className="bg-white text-primary hover:bg-gray-100 font-bold text-lg px-10 py-4 rounded-lg inline-block transition-all duration-300">
+          <button onClick={() => handleBookNow()} className="bg-white text-primary hover:bg-gray-100 font-bold text-lg px-10 py-4 rounded-lg inline-block transition-all duration-300 cursor-pointer">
             Book Now
-          </Link>
+          </button>
         </div>
       </section>
 

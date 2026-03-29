@@ -32,6 +32,7 @@ export interface BookingState {
   paymentMethod: PaymentMethod;
   lastBookingId: number | null;
   lastBookingTotalAmount: number | null;
+  pendingProductId: number | null;
 }
 
 const STORAGE_KEY = 'booking_flow_state_v1';
@@ -48,6 +49,7 @@ const defaultState: BookingState = {
   paymentMethod: 'paymongo',
   lastBookingId: null,
   lastBookingTotalAmount: null,
+  pendingProductId: null,
 };
 
 interface BookingContextValue {
@@ -60,6 +62,7 @@ interface BookingContextValue {
   setSpecialRequests: (value: string) => void;
   setPaymentMethod: (value: PaymentMethod) => void;
   setConfirmation: (input: { bookingId: number; totalAmount: number }) => void;
+  setPendingProduct: (productId: number | null) => void;
   reset: (options?: { keepSearch?: boolean }) => void;
 }
 
@@ -144,6 +147,9 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
       },
       setConfirmation: ({ bookingId, totalAmount }) => {
         setState((prev) => ({ ...prev, lastBookingId: bookingId, lastBookingTotalAmount: totalAmount }));
+      },
+      setPendingProduct: (productId) => {
+        setState((prev) => ({ ...prev, pendingProductId: productId }));
       },
       reset: (options) => {
         setState((prev) => {

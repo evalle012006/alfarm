@@ -1,5 +1,6 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
+import { Toaster } from 'sonner'
 import { AuthProvider } from '@/lib/AuthContext'
 import { BookingProvider } from '@/lib/BookingContext'
 
@@ -21,6 +22,7 @@ export default function RootLayout({
       <body
         className={`${inter.className} bg-white text-slate-900 dark:bg-slate-950 dark:text-white`}
       >
+        <Toaster position="top-right" richColors />
         <AuthProvider>
           <BookingProvider>
             {children}

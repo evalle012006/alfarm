@@ -68,7 +68,7 @@ interface AvailabilityItem {
 function BookingResultsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { state: bookingState, setSearch, incrementCart, setCartQuantity, clearCart } = useBooking();
+  const { state: bookingState, setSearch, incrementCart, setCartQuantity, clearCart, setPendingProduct } = useBooking();
 
   const searchType = (searchParams.get('type') || bookingState.bookingType || 'day') as 'day' | 'overnight';
   const checkInDate = searchParams.get('check_in') || searchParams.get('date') || bookingState.checkInDate || '';
@@ -137,6 +137,10 @@ function BookingResultsContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchType, checkInDate, checkOutDate, searchAdults, searchChildren]);
 
+  // Pre-select product from accommodations page redirect
+  const preselectId = searchParams.get('preselect');
+  const preselectAppliedRef = useRef(false);
+
   // Fetch products (static catalog — only needs to run once)
   useEffect(() => {
     async function fetchProducts() {
@@ -162,6 +166,21 @@ function BookingResultsContent() {
       .then(data => { if (data) setEntranceFees(data); })
       .catch(() => { });
   }, []);
+
+  // Auto-add preselected product to cart once products are loaded
+  useEffect(() => {
+    if (preselectAppliedRef.current || loading || !preselectId) return;
+    const pid = parseInt(preselectId);
+    if (isNaN(pid)) return;
+
+    const exists = products.find(p => p.id === pid);
+    if (exists && !cart[pid]) {
+      incrementCart(pid, 1);
+    }
+    // Clear pending product from context
+    setPendingProduct(null);
+    preselectAppliedRef.current = true;
+  }, [loading, preselectId, products, cart, incrementCart, setPendingProduct]);
 
   // Fetch availability — re-runs when dates or booking type change
   useEffect(() => {
